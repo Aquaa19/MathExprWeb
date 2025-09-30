@@ -1,250 +1,92 @@
-/* style.css — upgraded frosted glass visuals + select fixes for light theme
-   Drop this file into static/css/style.css (replaces previous) */
+/* style.css — with glassy mode buttons + hover animations */
 
-/* ---------------------------
-   Theme variables
-   --------------------------- */
+/* --- Theme variables --- */
 :root{
   --bg: #0b1220;
-  --panel: rgba(15,23,36,0.60);      /* semi-transparent panel base for strong glass */
-  --panel-solid: #0f1724;            /* fallback solid color for non-backdrop-filter browsers */
-  --panel-accent: rgba(255,255,255,0.02);
+  --panel: rgba(15,23,36,0.60);
   --muted: #9aa7b2;
   --accent: #60a5fa;
   --accent-2: #7c3aed;
   --text: #e6eef6;
-  --glass: rgba(255,255,255,0.03);
-  --glass-strong: rgba(255,255,255,0.06);
-  --glass-weak: rgba(255,255,255,0.015);
-  --success: #22c55e;
-  --danger: #ef4444;
-  --radius: 14px;
-  --gap: 14px;
-  font-size: 16px;
+  --glass: rgba(255,255,255,0.02);
+  --radius: 12px;
+  --gap: 12px;
+  font-size:16px;
 }
+.theme-light { --bg: linear-gradient(180deg,#eef2f7,#e6e9ef); --panel: rgba(255,255,255,0.65); --text:#0b1220; --muted:#475569; --accent:#2563eb; --glass: rgba(2,6,23,0.03); }
 
-/* Light theme overrides */
-.theme-light {
-  --bg: linear-gradient(180deg,#eef2f7 0%, #e6e9ef 100%);
-  --panel: rgba(255,255,255,0.65);
-  --panel-solid: #ffffff;
-  --panel-accent: rgba(2,6,23,0.02);
-  --muted: #475569;
-  --accent: #2563eb;
-  --text: #0b1220;
-  --glass: rgba(2,6,23,0.03);
-  --glass-strong: rgba(2,6,23,0.05);
-  --glass-weak: rgba(2,6,23,0.01);
-}
+/* --- Base layout --- */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:var(--text)}
+.container{max-width:980px;margin:22px auto;padding:16px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:14px;box-shadow:0 12px 40px rgba(2,6,23,0.55);border:1px solid rgba(255,255,255,0.03);backdrop-filter:blur(8px) saturate(1.06);-webkit-backdrop-filter:blur(8px) saturate(1.06);}
 
-/* ---------------------------
-   Base layout & typography
-   --------------------------- */
-* { box-sizing: border-box; }
-html,body { height:100%; margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; background: var(--bg); color: var(--text); }
-.container { max-width: 980px; margin: 22px auto; padding: 16px; }
+/* --- Input area --- */
+.label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+textarea{width:100%;min-height:110px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);color:inherit;font-family:ui-monospace,Menlo,monospace;resize:vertical}
+.row.controls{display:flex;gap:12px;align-items:center}
+.modes-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;}
 
-/* ---------------------------
-   Frosted glass cards - main rule
-   - We use backdrop-filter (blur + saturate) where available
-   - Add a subtle gradient/shine overlay and soft border for depth
-   --------------------------- */
-.card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border-radius: var(--radius);
-  padding: 14px;
-  box-shadow: 0 10px 30px rgba(2,6,23,0.55);
-  border: 1px solid rgba(255,255,255,0.04);
-  position: relative;
-  overflow: hidden;
-  /* backdrop filter - strong frosted look */
-  backdrop-filter: blur(10px) saturate(1.12);
-  -webkit-backdrop-filter: blur(10px) saturate(1.12);
-  /* fallback */
-  background-color: var(--panel-solid);
-}
-
-/* Add an inner glossy highlight */
-.card::before{
-  content: "";
-  position: absolute;
-  left: -30%;
-  top: -40%;
-  width: 160%;
-  height: 60%;
-  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.00));
-  transform: rotate(-12deg);
-  pointer-events: none;
-  filter: blur(8px);
-  opacity: 0.9;
-}
-
-/* Slight darker border shadow at bottom */
-.card::after{
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -8px;
-  height: 24px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.18));
-  pointer-events: none;
-  border-bottom-left-radius: var(--radius);
-  border-bottom-right-radius: var(--radius);
-  transform: translateY(6px);
-  opacity: 0.6;
-}
-
-/* ---------------------------
-   Headings, topbar, controls
-   --------------------------- */
-.topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 8px 18px 8px; margin-bottom: var(--gap); }
-.brand h1 { margin:0; font-size:1.15rem; }
-.brand .tag { margin-top:4px; color:var(--muted); font-size:0.92rem; }
-
-/* ---------------------------
-   Input card specifics
-   --------------------------- */
-.input-card { margin-bottom: var(--gap); border-radius: 18px; }
-.label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-.hint { font-size:0.9rem; color:var(--muted); }
-
-textarea {
-  width:100%;
-  min-height:110px;
-  padding:14px;
+/* --- Mode buttons (glassy) --- */
+.mode-buttons{display:flex;gap:10px;flex-wrap:wrap}
+.mode-btn{
+  position:relative;
+  padding:12px 18px;
   border-radius:12px;
-  border: 1px solid rgba(255,255,255,0.03);
-  background: linear-gradient(180deg, var(--glass-weak), transparent);
-  color:inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
-  font-size:0.95rem;
-  resize: vertical;
-  outline: none;
-  transition: box-shadow .18s ease, transform .08s ease;
-}
-
-/* subtle focus glow */
-textarea:focus {
-  box-shadow: 0 6px 20px rgba(96,165,250,0.12), inset 0 1px 0 rgba(255,255,255,0.02);
-  transform: translateY(-1px);
-}
-
-/* ---------------------------
-   Controls row
-   --------------------------- */
-.row.controls { display:flex; gap:12px; align-items:center; margin-top:12px; }
-.select-wrap select {
-  padding:10px 12px;
-  border-radius:10px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
-  border: 1px solid rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.05);
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   color:var(--text);
-  min-width:170px;
-  appearance: none;           /* remove native arrow across browsers */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  position: relative;
-  padding-right: 36px;        /* space for custom arrow */
-  cursor: pointer;
+  font-weight:700;
+  cursor:pointer;
+  transition: transform .12s cubic-bezier(.2,.9,.2,1), box-shadow .18s ease, opacity .12s;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.45);
+  overflow:hidden;
 }
 
-/* custom arrow indicator inside select */
-.select-wrap { position: relative; display:inline-block; }
-.select-wrap::after {
-  content: "▾";
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--muted);
-  font-size: 0.95rem;
+/* subtle glossy sheen */
+.mode-btn::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+  transform: translateX(-40%);
+  transition: transform .6s cubic-bezier(.2,.9,.2,1);
+  pointer-events:none;
 }
 
-/* Focus ring for select */
-.select-wrap select:focus {
-  box-shadow: 0 6px 20px rgba(96,165,250,0.12);
+/* hover animation */
+.mode-btn:hover{ transform: translateY(-4px) scale(1.01); box-shadow: 0 12px 36px rgba(2,6,23,0.5); }
+.mode-btn:hover::before{ transform: translateX(40%); }
+
+/* active/selected style */
+.mode-btn.active{
+  background: linear-gradient(135deg, rgba(96,165,250,0.15), rgba(124,58,237,0.12));
+  border: 1px solid rgba(96,165,250,0.28);
+  box-shadow: 0 18px 50px rgba(96,165,250,0.08), inset 0 -4px 18px rgba(0,0,0,0.08);
+  color: #ffffff;
 }
 
-/* ---------------------------
-   Fix for light theme select dropdown & spinner
-   - Browsers render dropdown popup outside CSS control, but we can ensure the visible select area contrasts.
-   - Also we provide a small rule to ensure option text is dark in light theme, and ensure arrow visible.
-   --------------------------- */
-.theme-light .select-wrap select {
-  background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(240,240,246,0.88));
-  color: var(--text);
-  border: 1px solid rgba(2,6,23,0.06);
-}
+/* small mode-actions (run etc.) */
+.mode-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
+.btn-group{display:flex;gap:8px}
+button.primary{background:var(--accent);color:#06203a;padding:10px 14px;border-radius:10px;border:none}
+button.muted{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:8px}
 
-.theme-light .select-wrap::after {
-  color: #22313f;  /* darker arrow in light mode */
-}
+/* description panel */
+.mode-description{margin-top:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border:1px solid rgba(255,255,255,0.02)}
+.mode-description strong{display:block;margin-bottom:6px}
 
-/* For browsers that support ::part on native select (Safari), ensure options are legible */
-select::-ms-expand { display: none; } /* hide IE arrow */
+/* results & panels */
+.results-card{margin-top:18px}
+.result-text{background:rgba(0,0,0,0.35);padding:12px;border-radius:10px;color:#cfe8ff;min-height:56px;white-space:pre-wrap}
+.latex-panels{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+.latex-panel{flex:1;min-width:220px;border-radius:10px;padding:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border:1px solid rgba(255,255,255,0.03);backdrop-filter: blur(6px)}
+.panel-title{margin-bottom:6px;color:var(--muted)}
 
-/* ---------------------------
-   Buttons
-   --------------------------- */
-.btn-group { display:flex; gap:8px; }
-button { padding:10px 14px; border-radius:10px; border: none; cursor:pointer; font-weight:700; }
-button.primary { background: var(--accent); color: #04243b; box-shadow: 0 8px 22px rgba(96,165,250,0.12); }
-button.muted { background: transparent; color: var(--muted); border:1px solid rgba(255,255,255,0.03); padding:9px 12px; }
+/* meta, footer, history */
+.meta-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.history-list{list-style:none;padding:0;margin:8px 0 0 0;max-height:220px;overflow:auto}
+.history-list li{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
 
-/* ---------------------------
-   Results area + LaTeX panels
-   --------------------------- */
-.results-card { margin-top: 18px; border-radius: 18px; padding-bottom: 20px; }
-.results-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-
-/* result text / console */
-.result-text { background: rgba(0,0,0,0.35); padding:12px; border-radius:10px; color:#cfe8ff; min-height:56px; white-space:pre-wrap; }
-.math-render { padding:14px; margin-top:10px; background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent); border-radius:8px; min-height:48px; }
-
-/* LaTeX panels styling - stronger glass look */
-.latex-panels { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
-.latex-panel { flex:1; min-width:240px; border-radius:12px; padding:10px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.03);
-  backdrop-filter: blur(8px) saturate(1.08);
-  -webkit-backdrop-filter: blur(8px) saturate(1.08);
-}
-
-/* tiny title */
-.panel-title { margin-bottom:8px; color:var(--muted); font-size:0.92rem; }
-
-/* meta and history */
-.meta-row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
-.history-list { list-style:none; padding:0; margin:8px 0 0 0; max-height:260px; overflow:auto; }
-.history-list li { padding:10px; border-radius:10px; background: rgba(255,255,255,0.02); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
-
-/* ---------------------------
-   Footer and responsive tweaks
-   --------------------------- */
-.footer { max-width:960px; margin:12px auto 40px; color:var(--muted); padding:6px 14px; text-align:center; }
-
-/* Mobile-friendly adjustments */
-@media (max-width:760px) {
-  .row.controls { flex-direction: column; align-items: stretch; gap:10px; }
-  .latex-panels { flex-direction: column; }
-  .select-wrap select { min-width:100%; }
-}
-
-/* Accessibility helpers */
-.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
-
-/* ---------------------------
-   Optional: stronger glass accent for focused card (tweakable)
-   --------------------------- */
-.card--focus {
-  box-shadow: 0 18px 60px rgba(2,6,23,0.6);
-  border: 1px solid rgba(255,255,255,0.06);
-  transform: translateY(-4px);
-}
-
-/* ---------------------------
-   Notes:
-   - Adjust the blur strength by changing `backdrop-filter: blur(...)` values.
-   - For very bright light theme, arrow color is forced darker so the select control's indicator is visible.
-   - Some older browsers (or if user disables backdrop-filter) will fallback to `--panel-solid` backgrounds.
-   --------------------------- */
+/* small responsive tweaks */
+@media (max-width:720px){ .modes-row{flex-direction:column;align-items:stretch} .mode-actions{margin-left:0} .mode-buttons{justify-content:flex-start} }
