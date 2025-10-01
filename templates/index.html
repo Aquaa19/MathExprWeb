@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Algebra Calculator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- KaTeX for LaTeX rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -26,7 +25,9 @@
             <button class="mode-btn" data-mode="factor">Factor</button>
             <button class="mode-btn" data-mode="substitute">Substitute</button>
             <button class="mode-btn" data-mode="integrate">Integrate</button>
-            <button class="mode-btn" data-mode="resimplify">Re-Simplify</button>
+            <button class="mode-btn" data-mode="differentiate">Differentiate</button> <button class="mode-btn" data-mode="laplace_t">Laplace Transform</button>
+            <button class="mode-btn" data-mode="fourier_t">Fourier Transform</button>
+            <button class="mode-btn" data-mode="mellin_t">Mellin Transform</button>
         </div>
 
         <div class="info-box" id="modeInfo">
@@ -70,6 +71,11 @@
         <div class="result-section" id="resultSection">
             <div class="result-header">
                 <div class="result-label">Result</div>
+                
+                <button class="resimplify-btn" id="resimplifyBtn" style="display: none;" title="Re-simplify the current result">
+                    ♻️ Re-Simplify
+                </button>
+
                 <button class="export-latex-btn" id="exportLatexBtn" style="display: none;">
                     📄 Export LaTeX
                 </button>

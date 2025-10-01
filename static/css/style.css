@@ -5,35 +5,37 @@
 }
 
 :root {
-    --primary: #667eea;
-    --secondary: #764ba2;
-    --accent: #f093fb;
-    --bg-start: #667eea;
-    --bg-end: #764ba2;
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
+    /* DARK THEME: TEAL/EMERALD (RETAINED) */
+    --primary: #48c9b0; /* Bright Teal (Buttons, main accent) */
+    --secondary: #16a085; /* Dark Teal (Gradient end) */
+    --accent: #d4f7ef; /* Very Light Teal (Subtle highlights/glow) */
+    --bg-start: #1c1c1c; /* Very Dark Gray/Black */
+    --bg-end: #0f1d2a; /* Dark Navy/Teal */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
     --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.8);
-    --card-bg: rgba(255, 255, 255, 0.15);
-    --input-bg: rgba(255, 255, 255, 0.2);
+    --text-secondary: #a9c6ce; /* Off-white/Gray for secondary text */
+    --card-bg: rgba(0, 0, 0, 0.2);
+    --input-bg: rgba(0, 0, 0, 0.3);
     --input-text: #ffffff;
-    --shadow: rgba(0, 0, 0, 0.2);
+    --shadow: rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="light"] {
-    --primary: #667eea;
-    --secondary: #764ba2;
-    --accent: #f093fb;
-    --bg-start: #e0e7ff;
-    --bg-end: #fce7f3;
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.5);
-    --text-primary: #1f2937;
-    --text-secondary: #4b5563;
-    --card-bg: rgba(255, 255, 255, 0.6);
-    --input-bg: rgba(255, 255, 255, 0.8);
+    /* LIGHT THEME: COMPLIMENTARY CHERRY (NEW) */
+    --primary: #e74c3c; /* Bright Red/Cherry (Buttons, accents) */
+    --secondary: #c0392b; /* Deep Red/Maroon (Gradient end) */
+    --accent: #ff6f7a; /* Pink Accent */
+    --bg-start: #f5f8fb; /* Very Light, Cool White */
+    --bg-end: #fbeaea; /* Very Light Pink/Red tint */
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --text-primary: #2c3e50; /* Dark Charcoal Blue */
+    --text-secondary: #8492a6; /* Medium Gray for muted text */
+    --card-bg: rgba(255, 255, 255, 0.7);
+    --input-bg: #ffffff;
     --input-text: #1f2937;
-    --shadow: rgba(0, 0, 0, 0.1);
+    --shadow: rgba(0, 0, 0, 0.15);
 }
 
 body {
@@ -110,7 +112,8 @@ h1 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    /* Adjusted shadow for dynamic primary color */
+    text-shadow: 0 2px 10px var(--shadow);
     display: flex;
     align-items: center;
     gap: 15px;
@@ -201,16 +204,17 @@ h1 {
 }
 
 .mode-btn:hover {
-    color: #ffffff;
+    color: #0d3831; /* NEW: Dark Green/Teal text color on hover */
     transform: translateY(-3px);
     box-shadow: 0 8px 20px var(--shadow);
     border-color: var(--primary);
 }
 
 .mode-btn.active {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     color: white;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    /* Adjusted shadow to use dynamic primary color */
+    box-shadow: 0 8px 25px var(--shadow); 
     transform: translateY(-2px);
     border-color: transparent;
 }
@@ -262,7 +266,8 @@ textarea::placeholder {
 input[type="text"]:focus, textarea:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2),
+    /* Adjusted shadow for dynamic primary color */
+    box-shadow: 0 0 0 4px var(--primary),
                 inset 0 2px 4px var(--shadow);
     transform: translateY(-2px);
 }
@@ -308,7 +313,7 @@ textarea {
 }
 
 .quick-btn:hover {
-    background: linear-gradient(135deg, var(--primary), var(--accent));
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     border-color: transparent;
     transform: translateY(-3px);
@@ -322,7 +327,7 @@ textarea {
 .calculate-btn {
     width: 100%;
     padding: 22px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     color: white;
     border: none;
     border-radius: 18px;
@@ -332,7 +337,8 @@ textarea {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
     letter-spacing: 2px;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    /* Adjusted shadow to use dynamic primary color */
+    box-shadow: 0 8px 25px var(--shadow); 
     position: relative;
     overflow: hidden;
     display: flex;
@@ -345,7 +351,7 @@ textarea {
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
+    left: 0; 
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
@@ -356,9 +362,33 @@ textarea {
     left: 100%;
 }
 
+/* NEW ANIMATION KEYFRAMES */
+@keyframes progress-loop {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* NEW CALCULATING CLASS */
+.calculate-btn.calculating::before {
+    /* Override hover/base state */
+    left: -100%; /* Start the bar off-screen */
+    width: 100%;
+    height: 100%;
+    /* Looping animation */
+    animation: progress-loop 1s linear infinite; 
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); /* Make it more prominent */
+    transition: none; /* Disable slow hover transition */
+}
+
+/* Ensure hover styles are not applied when calculating */
+.calculate-btn.calculating:hover::before {
+    left: -100%;
+    animation: progress-loop 1s linear infinite;
+}
+
 .calculate-btn:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 12px 35px var(--shadow);
 }
 
 .calculate-btn:active {
@@ -438,7 +468,8 @@ textarea {
 
 .export-latex-btn {
     padding: 10px 20px;
-    background: linear-gradient(135deg, #4ade80, #22c55e);
+    /* Keeping this fixed green for utility/export purpose */
+    background: linear-gradient(135deg, #4ade80, #22c55e); 
     color: white;
     border: none;
     border-radius: 12px;
@@ -484,7 +515,7 @@ textarea {
     background: var(--input-bg);
     border-radius: 15px;
     backdrop-filter: blur(10px);
-    border-left: 5px solid #4ade80;
+    border-left: 5px solid var(--primary); /* Now uses variable */
 }
 
 .latex-label {
@@ -600,7 +631,7 @@ textarea {
 
 .history-result {
     font-family: 'Courier New', monospace;
-    color: #4ade80;
+    color: var(--primary); /* Now uses variable */
     font-weight: 700;
     font-size: 1.05em;
 }

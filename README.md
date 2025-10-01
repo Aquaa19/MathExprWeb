@@ -1,7 +1,15 @@
-# MathExprWeb
+# MathExprWeb: Advanced Symbolic Calculator
 
-Symbolic math web app (Flask + SymPy).  
-Features: expand, simplify, factor, substitute, integrate, live LaTeX preview.
+This is a powerful symbolic math web application built using Flask and SymPy, featuring a responsive, modern interface with theme toggling and live LaTeX rendering.
+
+## Features
+
+The calculator supports a comprehensive range of algebraic and calculus operations:
+* **Algebraic:** Expand, Simplify, Factor, Substitute.
+* **Calculus:** Integrate (Indefinite & Definite), Differentiate (Nth-order derivatives).
+* **Transforms:** Laplace Transform, Fourier Transform, Mellin Transform.
+* **Utility:** Re-Simplify previous results (accessible in the result section).
+* **UI/UX:** Live LaTeX preview, persistent calculation history, and theme toggling.
 
 ## Run locally
 

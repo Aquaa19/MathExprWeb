@@ -51,14 +51,43 @@ const modeDescriptions = {
         ],
         helper: 'Examples: "x^2" → ∫x²dx, "x^2; x" → ∫x²dx, "x^2; x=0,1" → definite integral from 0 to 1'
     },
-    resimplify: {
-        title: 'Re-Simplify Mode',
+    // NEW MODE: DIFFERENTIATE
+    differentiate: {
+        title: 'Differentiation Mode',
         items: [
-            'Aggressively simplifies already computed results',
-            'Applies trig simplification and log combining',
-            'Useful for cleaning up integration results'
+            'Finds the derivative of an expression',
+            'Format: expr or expr; var, order',
+            'Example: sin(x^2); x, 2 (for second derivative)'
         ],
-        helper: 'Paste a previous result to simplify it further. Automatically strips "+ C" from indefinite integrals.'
+        helper: 'Format: expr; var, order. Default is first derivative w.r.t. x. Example: x^3; x, 2'
+    },
+    // REMOVED: resimplify mode
+    laplace_t: {
+        title: 'Laplace Transform',
+        items: [
+            'Computes the Laplace Transform L{f(t)}(s)',
+            'Format: expr; input_var, transform_var',
+            'Example: exp(-a*t); t, s'
+        ],
+        helper: 'Format: expr; input_var, transform_var. Example: 1/(t+1); t, s'
+    },
+    fourier_t: {
+        title: 'Fourier Transform',
+        items: [
+            'Computes the Fourier Transform F{f(x)}(k)',
+            'Uses SymPy\'s default convention (e.g., in terms of k)',
+            'Example: exp(-x^2); x, k'
+        ],
+        helper: 'Format: expr; input_var, transform_var. Example: exp(-abs(x)); x, k'
+    },
+    mellin_t: {
+        title: 'Mellin Transform',
+        items: [
+            'Computes the Mellin Transform M{f(x)}(s)',
+            'Result includes the fundamental strip (a, b)',
+            'Example: exp(-x); x, s'
+        ],
+        helper: 'Format: expr; input_var, transform_var. Example: x**a*exp(-x); x, s'
     }
 };
 
@@ -128,6 +157,12 @@ function setLoading(isLoading) {
     const btnText = document.getElementById('btnText');
     const btnLoader = document.getElementById('btnLoader');
     
+    if (isLoading) {
+        btn.classList.add('calculating');
+    } else {
+        btn.classList.remove('calculating');
+    }
+    
     btn.disabled = isLoading;
     btnText.style.display = isLoading ? 'none' : 'inline';
     btnLoader.style.display = isLoading ? 'inline-block' : 'none';
@@ -140,13 +175,15 @@ function displayResult(result, latex = null, isError = false) {
     const latexSection = document.getElementById('latexSection');
     const latexRender = document.getElementById('latexRender');
     const exportBtn = document.getElementById('exportLatexBtn');
-    
+    const resimplifyBtn = document.getElementById('resimplifyBtn'); // NEW
+
     resultContent.textContent = result;
     
     if (isError) {
         resultContent.classList.add('error');
         latexSection.style.display = 'none';
         exportBtn.style.display = 'none';
+        resimplifyBtn.style.display = 'none'; // Hide on error
         currentLatex = null;
     } else {
         resultContent.classList.remove('error');
@@ -163,18 +200,19 @@ function displayResult(result, latex = null, isError = false) {
                     displayMode: true
                 });
                 latexSection.style.display = 'block';
-                exportBtn.style.display = 'block';
             } catch (e) {
                 console.error('KaTeX rendering error:', e);
                 latexRender.textContent = latex;
                 latexSection.style.display = 'block';
-                exportBtn.style.display = 'block';
             }
         } else {
             latexSection.style.display = 'none';
-            exportBtn.style.display = 'none';
             currentLatex = null;
         }
+        
+        // Show Export and Re-Simplify on success
+        exportBtn.style.display = 'block';
+        resimplifyBtn.style.display = 'block';
     }
     
     resultSection.classList.add('show');
@@ -213,6 +251,42 @@ async function processExpression() {
         }
     } catch (error) {
         displayResult(`❌ Network error: ${error.message}`, null, true);
+    } finally {
+        setLoading(false);
+    }
+}
+
+// NEW: Function to handle Re-Simplify button click
+async function processResimplification() {
+    const exprToSimplify = document.getElementById('resultContent').textContent.trim();
+    
+    if (!exprToSimplify || exprToSimplify.startsWith('❌') || exprToSimplify.startsWith('⚠️')) {
+        return; 
+    }
+    
+    setLoading(true);
+    
+    try {
+        const response = await fetch('/api/solve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'resimplify', // Fixed mode call
+                expr: exprToSimplify
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+            // Display the new simplified result without changing the currentMode
+            displayResult(data.result, data.latex || null, false);
+            // Optionally: Update history with the resimplified result if needed, but not done here to keep history clean.
+        } else {
+            displayResult(data.error || 'Re-simplification failed.', null, true);
+        }
+    } catch (error) {
+        displayResult(`❌ Network error during Re-Simplify: ${error.message}`, null, true);
     } finally {
         setLoading(false);
     }
@@ -282,8 +356,9 @@ function clearHistory() {
 document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 document.getElementById('calculateBtn').addEventListener('click', processExpression);
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+document.getElementById('resimplifyBtn').addEventListener('click', processResimplification); // NEW LISTENER
 
-// Export LaTeX functionality
+// Export LaTeX functionality (omitted for brevity, remains unchanged)
 document.getElementById('exportLatexBtn').addEventListener('click', () => {
     const expr = document.getElementById('expression').value.trim();
     const result = document.getElementById('resultContent').textContent.trim();
@@ -389,6 +464,7 @@ ${currentLatex}
     `);
     newWindow.document.close();
 });
+
 
 // Enter key support
 document.getElementById('expression').addEventListener('keypress', (e) => {
