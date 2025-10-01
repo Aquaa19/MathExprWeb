@@ -434,7 +434,7 @@ def _parse_integration_request(full_input_string):
         elif len(syms) == 0:
             var = Symbol('x')  # default
         else:
-            return None, None, None, "❌ Error: multiple variables detected — specify variable like '; x' or '; x=a,b'."
+            return None, None, None, "❌ Error: Multiple variables detected. Please specify the integration variable. Example: x+a; x"
 
     return parsed_expr, var, limits, None
 

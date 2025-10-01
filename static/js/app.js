@@ -47,9 +47,10 @@ const modeDescriptions = {
         items: [
             'Integrates expressions (indefinite or definite)',
             'Indefinite: expr or expr; x',
-            'Definite: expr; x=a,b'
+            'Definite: expr; x=a,b',
+            'Multi-variable: `expr; var` (e.g., `x+a; x`)'
         ],
-        helper: 'Examples: "x^2" → ∫x²dx, "x^2; x" → ∫x²dx, "x^2; x=0,1" → definite integral from 0 to 1'
+        helper: 'For multiple variables, specify which to integrate. Example: To compute ∫(x+a)dx, enter "x+a; x"'
     },
     // NEW MODE: DIFFERENTIATE
     differentiate: {
