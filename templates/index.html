@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Algebra Calculator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body data-theme="dark">
     <div class="floating-particles" id="particles"></div>
@@ -64,11 +68,16 @@
         </button>
 
         <div class="result-section" id="resultSection">
-            <div class="result-label">Result</div>
+            <div class="result-header">
+                <div class="result-label">Result</div>
+                <button class="export-latex-btn" id="exportLatexBtn" style="display: none;">
+                    📄 Export LaTeX
+                </button>
+            </div>
             <div class="result-content" id="resultContent"></div>
             <div class="latex-section" id="latexSection" style="display: none;">
-                <div class="latex-label">LaTeX:</div>
-                <div class="latex-content" id="latexContent"></div>
+                <div class="latex-label">Rendered LaTeX:</div>
+                <div class="latex-render" id="latexRender"></div>
             </div>
         </div>
 

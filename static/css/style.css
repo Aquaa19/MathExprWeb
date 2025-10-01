@@ -78,7 +78,6 @@ body::before {
     padding: 50px;
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--glass-border);
     position: relative;
     z-index: 1;
@@ -122,7 +121,6 @@ h1 {
     height: 60px;
     border-radius: 50%;
     background: var(--card-bg);
-    -webkit-backdrop-filter: blur(10px);
     border: 2px solid var(--glass-border);
     backdrop-filter: blur(10px);
     cursor: pointer;
@@ -159,28 +157,28 @@ h1 {
     margin-bottom: 35px;
     padding: 15px;
     background: var(--card-bg);
-    -webkit-backdrop-filter: blur(10px);
     border-radius: 20px;
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
 }
 
 .mode-btn {
-    padding: 16px 24px;
+    padding: 14px 18px;
     border: 2px solid var(--glass-border);
     background: var(--glass-bg);
     color: var(--text-primary);
     border-radius: 15px;
     cursor: pointer;
-    font-size: 0.95em;
+    font-size: 0.85em;
     font-weight: 700;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    -webkit-backdrop-filter: blur(10px);
+    letter-spacing: 0.5px;
     backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .mode-btn::before {
@@ -249,7 +247,6 @@ input[type="text"], textarea {
     font-size: 1.15em;
     font-family: 'Courier New', monospace;
     transition: all 0.3s ease;
-    -webkit-backdrop-filter: blur(10px);
     background: var(--input-bg);
     backdrop-filter: blur(10px);
     color: var(--input-text);
@@ -289,7 +286,6 @@ textarea {
     gap: 10px;
     margin-top: 15px;
     padding: 15px;
-    -webkit-backdrop-filter: blur(10px);
     background: var(--card-bg);
     border-radius: 15px;
     backdrop-filter: blur(10px);
@@ -306,7 +302,6 @@ textarea {
     font-weight: 600;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: 'Courier New', monospace;
-    -webkit-backdrop-filter: blur(10px);
     color: var(--text-primary);
     backdrop-filter: blur(10px);
     box-shadow: 0 2px 5px var(--shadow);
@@ -395,7 +390,6 @@ textarea {
     padding: 30px;
     background: var(--card-bg);
     border-radius: 20px;
-    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(15px);
     border: 2px solid var(--glass-border);
     min-height: 120px;
@@ -419,10 +413,16 @@ textarea {
     }
 }
 
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
 .result-label {
     font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: 15px;
     font-size: 1.15em;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -436,6 +436,28 @@ textarea {
     font-size: 1.3em;
 }
 
+.export-latex-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+}
+
+.export-latex-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(74, 222, 128, 0.4);
+}
+
+.export-latex-btn:active {
+    transform: translateY(-1px);
+}
+
 .result-content {
     font-size: 1.4em;
     color: var(--text-primary);
@@ -444,7 +466,6 @@ textarea {
     line-height: 1.8;
     padding: 20px;
     background: var(--input-bg);
-    -webkit-backdrop-filter: blur(10px);
     border-radius: 15px;
     border-left: 5px solid var(--primary);
     backdrop-filter: blur(10px);
@@ -461,7 +482,6 @@ textarea {
     margin-top: 20px;
     padding: 20px;
     background: var(--input-bg);
-    -webkit-backdrop-filter: blur(10px);
     border-radius: 15px;
     backdrop-filter: blur(10px);
     border-left: 5px solid #4ade80;
@@ -470,25 +490,33 @@ textarea {
 .latex-label {
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     font-size: 0.95em;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-.latex-content {
-    font-family: 'Courier New', monospace;
+.latex-render {
     color: var(--text-primary);
-    font-size: 1.1em;
-    word-wrap: break-word;
-    line-height: 1.6;
+    font-size: 1.3em;
+    overflow-x: auto;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.latex-render .katex {
+    font-size: 1.2em;
+}
+
+.latex-render .katex-display {
+    margin: 1em 0;
 }
 
 .history-section {
     margin-top: 35px;
     padding: 25px;
     background: var(--card-bg);
-    -webkit-backdrop-filter: blur(15px);
     border-radius: 20px;
     backdrop-filter: blur(15px);
     border: 2px solid var(--glass-border);
@@ -543,7 +571,6 @@ textarea {
     border-left: 4px solid var(--primary);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     box-shadow: 0 2px 8px var(--shadow);
 }
@@ -592,7 +619,6 @@ textarea {
     padding: 20px;
     border-radius: 15px;
     margin-bottom: 25px;
-    -webkit-backdrop-filter: blur(15px);
     backdrop-filter: blur(15px);
     border: 2px solid var(--glass-border);
     border-left: 5px solid var(--primary);

@@ -9,7 +9,8 @@ from sympy import (
     integrate as sympy_integrate, Integral as SympyIntegral,
     sin, cos, tan, cot, sec, csc,
     asin, acos, atan, sinh, cosh, tanh,
-    exp, log, sqrt, Abs, pi, E, trigsimp
+    exp, log, sqrt, Abs, pi, E, trigsimp,
+    apart # ADDED: for partial fractions
 )
 from sympy.parsing.sympy_parser import (
     parse_expr, standard_transformations,
@@ -172,6 +173,19 @@ def factor_expr(expression_string):
     except Exception as e:
         return None, f"❌ Error during factorization: {e}. Not all expressions can be factored."
 
+def partial_fraction_decomposition(expression_string):
+    """
+    Performs partial fraction decomposition on the expression.
+    """
+    parsed_expr, error = _parse_expression_string(expression_string)
+    if error:
+        return None, error
+    try:
+        decomposed = apart(parsed_expr)
+        return normal_to_unicode_expr(str(decomposed)), None
+    except Exception as e:
+        return None, f"❌ Error during partial fraction decomposition: {e}. Ensure the expression is a rational function."
+
 def substitute_expr(full_input_string):
     parts = full_input_string.split(';', 1)
     expression_string = parts[0].strip()
@@ -321,8 +335,19 @@ def _parse_integration_request(full_input_string):
 def _manualintegrate_worker(parsed_expr, var, limits):
     """
     Worker target to attempt manualintegrate then fallback to sympy.integrate.
+    Includes partial fraction decomposition for rational functions.
     Returns SymPy expression (antiderivative for indefinite or value for definite).
     """
+    # Check if the expression is a rational function of the integration variable
+    # If the expression is a rational function of the variable, perform partial fraction decomposition
+    if parsed_expr.is_rational_function(var):
+        try:
+            # Apply partial fraction decomposition using `apart`
+            parsed_expr = apart(parsed_expr, var)
+        except Exception:
+            # If apart fails (e.g., SymPy issues), continue with original expression
+            pass
+
     # Try manualintegrate for an indefinite antiderivative
     if limits is None:
         try:
@@ -403,4 +428,3 @@ def resimplify_expr(expression_string):
         return normal_to_unicode_expr(str(s)), None
     except Exception as e:
         return None, f"❌ Error during re-simplification: {e}"
-
