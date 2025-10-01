@@ -6,15 +6,24 @@
     <title>Advanced Algebra Calculator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
-<body data-theme="dark">
+<body data-theme="dark" data-is-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}">
     <div class="floating-particles" id="particles"></div>
     
     <div class="container">
         <div class="header">
             <h1>🧮 Algebra Calculator</h1>
+            <div class="auth-links">
+                {% if current_user.is_authenticated %}
+                    <span class="username-display">Hi, {{ current_user.username }}</span>
+                    <a href="{{ url_for('logout') }}">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}">Login</a>
+                    <a href="{{ url_for('register') }}">Register</a>
+                {% endif %}
+            </div>
             <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
         </div>
         <p class="subtitle">Expand, Simplify, Factor, Substitute & Integrate Algebraic Expressions</p>
@@ -61,6 +70,8 @@
                 <button class="quick-btn" data-insert="sin">sin</button>
                 <button class="quick-btn" data-insert="cos">cos</button>
                 <button class="quick-btn" data-insert="tan">tan</button>
+                <!-- MODIFIED: Add a new button for atan -->
+                <button class="quick-btn" data-insert="atan">atan</button>
                 <button class="quick-btn" data-insert="log">log</button>
                 <button class="quick-btn" data-insert="exp">exp</button>
                 <button class="quick-btn" data-insert="I">i</button>
@@ -106,3 +117,4 @@
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
+

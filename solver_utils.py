@@ -8,7 +8,8 @@ from sympy import (
     expand, simplify, factor, sympify, symbols, Symbol, latex as sympy_latex,
     integrate as sympy_integrate, Integral as SympyIntegral,
     sin, cos, tan, cot, sec, csc,
-    asin, acos, atan, sinh, cosh, tanh,
+    asin, acos, atan, acot, asec, acsc,
+    sinh, cosh, tanh,
     exp, log, sqrt, Abs, pi, E, trigsimp,
     apart,
     diff as sympy_diff # ADDED: for differentiation
@@ -66,7 +67,9 @@ def insert_implicit_multiplication_rules(expr_str):
     # List of common function names to protect (only when used as functions with '(')
     func_names = [
         'sin','cos','tan','cot','sec','csc',
-        'asin','acos','atan','sinh','cosh','tanh',
+        'asin','acos','atan','acot','asec','acsc',
+        'arcsin', 'arccos', 'arctan', 'arccot', 'arcsec', 'arccsc',
+        'sinh','cosh','tanh',
         'exp','log','sqrt','Abs','erf','erfc'
     ]
 
@@ -121,7 +124,8 @@ def _parse_expression_string(expression_string):
         # elementary trig
         'sin': sin, 'cos': cos, 'tan': tan, 'cot': cot, 'sec': sec, 'csc': csc,
         # inverse trig
-        'asin': asin, 'acos': acos, 'atan': atan,
+        'asin': asin, 'acos': acos, 'atan': atan, 'acot': acot, 'asec': asec, 'acsc': acsc,
+        'arcsin': asin, 'arccos': acos, 'arctan': atan, 'arccot': acot, 'arcsec': asec, 'arccsc': acsc,
         # hyperbolic
         'sinh': sinh, 'cosh': cosh, 'tanh': tanh,
         # other math
