@@ -1,3 +1,4 @@
+/* MathExprWeb/static/css/style.css */
 * {
     margin: 0;
     padding: 0;
@@ -246,9 +247,52 @@ label {
     position: relative;
 }
 
+/* --- START: CORRECTED ANIMATED BORDER --- */
+
+/* NEW: Keyframes for the gradient background position */
+@keyframes animated-border-glow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* NEW: Add a pseudo-element for the animated border background */
+.input-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    /* Create a gradient much larger than the element */
+    background: linear-gradient(
+        60deg,
+        var(--secondary),
+        var(--primary),
+        var(--accent),
+        var(--primary),
+        var(--secondary)
+    );
+    background-size: 300% 300%;
+    border-radius: 15px; /* Must match the input's border-radius */
+    z-index: -1; /* Place it behind the input */
+    
+    /* Hide it by default */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    
+    /* Start the animation */
+    animation: animated-border-glow 4s linear infinite;
+}
+
+/* NEW: When the input is focused, show the pseudo-element */
+.input-wrapper:has(input:focus)::before {
+    opacity: 1;
+}
+
 input[type="text"], textarea {
     width: 100%;
     padding: 18px 20px;
+    /* MODIFIED: The border is now 2px solid and transparent on focus */
     border: 2px solid var(--glass-border);
     border-radius: 15px;
     font-size: 1.15em;
@@ -259,6 +303,8 @@ input[type="text"], textarea {
     backdrop-filter: blur(10px);
     color: var(--input-text);
     box-shadow: inset 0 2px 4px var(--shadow);
+    position: relative; /* Needed to appear above the pseudo-element */
+    z-index: 1;
 }
 
 input[type="text"]::placeholder,
@@ -267,14 +313,17 @@ textarea::placeholder {
     opacity: 0.6;
 }
 
+/* MODIFIED: Changed the original focus style */
 input[type="text"]:focus, textarea:focus {
     outline: none;
-    border-color: var(--primary);
-    /* Adjusted shadow for dynamic primary color */
-    box-shadow: 0 0 0 4px var(--primary),
-                inset 0 2px 4px var(--shadow);
+    /* Make the original border transparent to reveal the animated one behind it */
+    border-color: transparent; 
+    box-shadow: inset 0 2px 4px var(--shadow);
     transform: translateY(-2px);
 }
+
+/* --- END: CORRECTED ANIMATED BORDER --- */
+
 
 textarea {
     resize: vertical;
@@ -480,9 +529,8 @@ textarea {
     font-size: 1.3em;
 }
 
-.export-latex-btn {
+.export-latex-btn, .resimplify-btn { /* NEW: Grouped selector */
     padding: 10px 20px;
-    /* Keeping this fixed green for utility/export purpose */
     background: linear-gradient(135deg, #4ade80, #22c55e); 
     color: white;
     border: none;
@@ -492,16 +540,21 @@ textarea {
     font-weight: 700;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+    /* NEW: Add glassy effect to buttons */
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.export-latex-btn:hover {
+.export-latex-btn:hover, .resimplify-btn:hover { /* NEW: Grouped selector */
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(74, 222, 128, 0.4);
 }
 
-.export-latex-btn:active {
+.export-latex-btn:active, .resimplify-btn:active { /* NEW: Grouped selector */
     transform: translateY(-1px);
 }
+
 
 .result-content {
     font-size: 1.4em;
@@ -600,6 +653,10 @@ textarea {
     font-weight: 700;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    /* NEW: Added glassy effect */
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .clear-history-btn:hover {
@@ -619,8 +676,10 @@ textarea {
     border-left: 4px solid var(--primary);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* NEW: Enhanced glass effect */
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
     box-shadow: 0 2px 8px var(--shadow);
 }
 
@@ -664,13 +723,13 @@ textarea {
 
 .info-box {
     background: var(--card-bg);
-    border-left: 5px solid var(--primary);
     padding: 20px;
     border-radius: 15px;
     margin-bottom: 25px;
+    /* NEW: Enhanced glass effect */
     -webkit-backdrop-filter: blur(15px);
     backdrop-filter: blur(15px);
-    border: 2px solid var(--glass-border);
+    border: 1px solid var(--glass-border); /* Changed from 2px */
     border-left: 5px solid var(--primary);
     box-shadow: 0 4px 15px var(--shadow);
     animation: fadeIn 0.5s ease;

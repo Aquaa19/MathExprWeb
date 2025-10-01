@@ -2,9 +2,7 @@
 from flask import Flask, render_template, request, jsonify
 from solver_utils import (
     expand_expr, simplify_expr, factor_expr, substitute_expr,
-    integrate_expr, resimplify_expr,
-    laplace_transform_expr, fourier_transform_expr, mellin_transform_expr,
-    differentiate_expr # New import
+    integrate_expr, resimplify_expr
 )
 import os
 
@@ -45,29 +43,8 @@ def api_solve():
         if err:
             return jsonify({'ok': False, 'error': err}), 400
         return jsonify({'ok': True, 'result': display, 'latex': latex})
-    elif mode == 'differentiate':
-        display, latex, err = differentiate_expr(expr)
-        if err:
-            return jsonify({'ok': False, 'error': err}), 400
-        return jsonify({'ok': True, 'result': display, 'latex': latex})
-    # 'resimplify' mode is now an action button on the result section
     elif mode == 'resimplify':
         display, latex, err = resimplify_expr(expr)
-        if err:
-            return jsonify({'ok': False, 'error': err}), 400
-        return jsonify({'ok': True, 'result': display, 'latex': latex})
-    elif mode == 'laplace_t':
-        display, latex, err = laplace_transform_expr(expr)
-        if err:
-            return jsonify({'ok': False, 'error': err}), 400
-        return jsonify({'ok': True, 'result': display, 'latex': latex})
-    elif mode == 'fourier_t':
-        display, latex, err = fourier_transform_expr(expr)
-        if err:
-            return jsonify({'ok': False, 'error': err}), 400
-        return jsonify({'ok': True, 'result': display, 'latex': latex})
-    elif mode == 'mellin_t':
-        display, latex, err = mellin_transform_expr(expr)
         if err:
             return jsonify({'ok': False, 'error': err}), 400
         return jsonify({'ok': True, 'result': display, 'latex': latex})
