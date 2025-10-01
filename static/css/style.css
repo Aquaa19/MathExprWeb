@@ -103,6 +103,7 @@ body::before {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    position: relative; /* Needed for positioning the links */
 }
 
 h1 {
@@ -113,7 +114,6 @@ h1 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    /* Adjusted shadow for dynamic primary color */
     text-shadow: 0 2px 10px var(--shadow);
     display: flex;
     align-items: center;
@@ -208,7 +208,7 @@ h1 {
 }
 
 .mode-btn:hover {
-    color: #0d3831; 
+    color: #0d3831;
     transform: translateY(-3px);
     box-shadow: 0 8px 20px var(--shadow);
     border-color: var(--primary);
@@ -217,8 +217,7 @@ h1 {
 .mode-btn.active {
     background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     color: white;
-    /* Adjusted shadow to use dynamic primary color */
-    box-shadow: 0 8px 25px var(--shadow); 
+    box-shadow: 0 8px 25px var(--shadow);
     transform: translateY(-2px);
     border-color: transparent;
 }
@@ -247,23 +246,18 @@ label {
     position: relative;
 }
 
-/* --- START: CORRECTED ANIMATED BORDER --- */
-
-/* NEW: Keyframes for the gradient background position */
 @keyframes animated-border-glow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-/* NEW: Add a pseudo-element for the animated border background */
 .input-wrapper::before {
     content: '';
     position: absolute;
     top: 0; left: 0;
     width: 100%;
     height: 100%;
-    /* Create a gradient much larger than the element */
     background: linear-gradient(
         60deg,
         var(--secondary),
@@ -273,18 +267,13 @@ label {
         var(--secondary)
     );
     background-size: 300% 300%;
-    border-radius: 15px; /* Must match the input's border-radius */
-    z-index: -1; /* Place it behind the input */
-    
-    /* Hide it by default */
+    border-radius: 15px;
+    z-index: -1;
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
-    
-    /* Start the animation */
     animation: animated-border-glow 4s linear infinite;
 }
 
-/* NEW: When the input is focused, show the pseudo-element */
 .input-wrapper:has(input:focus)::before {
     opacity: 1;
 }
@@ -292,7 +281,6 @@ label {
 input[type="text"], textarea {
     width: 100%;
     padding: 18px 20px;
-    /* MODIFIED: The border is now 2px solid and transparent on focus */
     border: 2px solid var(--glass-border);
     border-radius: 15px;
     font-size: 1.15em;
@@ -303,7 +291,7 @@ input[type="text"], textarea {
     backdrop-filter: blur(10px);
     color: var(--input-text);
     box-shadow: inset 0 2px 4px var(--shadow);
-    position: relative; /* Needed to appear above the pseudo-element */
+    position: relative;
     z-index: 1;
 }
 
@@ -313,17 +301,12 @@ textarea::placeholder {
     opacity: 0.6;
 }
 
-/* MODIFIED: Changed the original focus style */
 input[type="text"]:focus, textarea:focus {
     outline: none;
-    /* Make the original border transparent to reveal the animated one behind it */
-    border-color: transparent; 
+    border-color: transparent;
     box-shadow: inset 0 2px 4px var(--shadow);
     transform: translateY(-2px);
 }
-
-/* --- END: CORRECTED ANIMATED BORDER --- */
-
 
 textarea {
     resize: vertical;
@@ -339,9 +322,8 @@ textarea {
 }
 
 .quick-insert {
-    /* CHANGED: Switched from flex-wrap to a responsive CSS Grid */
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); 
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
     gap: 10px;
     margin-top: 15px;
     padding: 15px;
@@ -353,12 +335,10 @@ textarea {
 }
 
 .quick-btn {
-    /* Standardized button appearance for the grid */
-    height: 48px; 
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    
     padding: 10px 16px;
     background: var(--input-bg);
     border: 1px solid var(--glass-border);
@@ -399,8 +379,7 @@ textarea {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
     letter-spacing: 2px;
-    /* Adjusted shadow to use dynamic primary color */
-    box-shadow: 0 8px 25px var(--shadow); 
+    box-shadow: 0 8px 25px var(--shadow);
     position: relative;
     overflow: hidden;
     display: flex;
@@ -413,7 +392,7 @@ textarea {
     content: '';
     position: absolute;
     top: 0;
-    left: 0; 
+    left: 0;
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
@@ -424,25 +403,20 @@ textarea {
     left: 100%;
 }
 
-/* NEW ANIMATION KEYFRAMES */
 @keyframes progress-loop {
     0% { left: -100%; }
     100% { left: 100%; }
 }
 
-/* NEW CALCULATING CLASS */
 .calculate-btn.calculating::before {
-    /* Override hover/base state */
-    left: -100%; /* Start the bar off-screen */
+    left: -100%;
     width: 100%;
     height: 100%;
-    /* Looping animation */
-    animation: progress-loop 1s linear infinite; 
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent); /* Make it more prominent */
-    transition: none; /* Disable slow hover transition */
+    animation: progress-loop 1s linear infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+    transition: none;
 }
 
-/* Ensure hover styles are not applied when calculating */
 .calculate-btn.calculating:hover::before {
     left: -100%;
     animation: progress-loop 1s linear infinite;
@@ -529,9 +503,9 @@ textarea {
     font-size: 1.3em;
 }
 
-.export-latex-btn, .resimplify-btn { /* NEW: Grouped selector */
+.export-latex-btn, .resimplify-btn {
     padding: 10px 20px;
-    background: linear-gradient(135deg, #4ade80, #22c55e); 
+    background: linear-gradient(135deg, #4ade80, #22c55e);
     color: white;
     border: none;
     border-radius: 12px;
@@ -540,21 +514,19 @@ textarea {
     font-weight: 700;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
-    /* NEW: Add glassy effect to buttons */
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.export-latex-btn:hover, .resimplify-btn:hover { /* NEW: Grouped selector */
+.export-latex-btn:hover, .resimplify-btn:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(74, 222, 128, 0.4);
 }
 
-.export-latex-btn:active, .resimplify-btn:active { /* NEW: Grouped selector */
+.export-latex-btn:active, .resimplify-btn:active {
     transform: translateY(-1px);
 }
-
 
 .result-content {
     font-size: 1.4em;
@@ -584,7 +556,7 @@ textarea {
     border-radius: 15px;
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
-    border-left: 5px solid var(--primary); /* Now uses variable */
+    border-left: 5px solid var(--primary);
 }
 
 .latex-label {
@@ -653,7 +625,6 @@ textarea {
     font-weight: 700;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-    /* NEW: Added glassy effect */
     -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -676,7 +647,6 @@ textarea {
     border-left: 4px solid var(--primary);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    /* NEW: Enhanced glass effect */
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
@@ -708,7 +678,7 @@ textarea {
 
 .history-result {
     font-family: 'Courier New', monospace;
-    color: var(--primary); /* Now uses variable */
+    color: var(--primary);
     font-weight: 700;
     font-size: 1.05em;
 }
@@ -726,10 +696,9 @@ textarea {
     padding: 20px;
     border-radius: 15px;
     margin-bottom: 25px;
-    /* NEW: Enhanced glass effect */
     -webkit-backdrop-filter: blur(15px);
     backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border); /* Changed from 2px */
+    border: 1px solid var(--glass-border);
     border-left: 5px solid var(--primary);
     box-shadow: 0 4px 15px var(--shadow);
     animation: fadeIn 0.5s ease;
@@ -807,3 +776,131 @@ textarea {
         font-size: 1.2em;
     }
 }
+
+/* --- START: AUTHENTICATION PAGE STYLES --- */
+
+.auth-container {
+    background: var(--glass-bg);
+    border-radius: 30px;
+    box-shadow: 0 8px 32px 0 var(--shadow);
+    max-width: 450px;
+    width: 100%;
+    padding: 40px;
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.6s ease-out;
+    text-align: center;
+}
+
+.auth-container h1 {
+    font-size: 2.2em;
+    margin-bottom: 25px;
+    background-clip: text; /* Re-apply for this specific h1 */
+    -webkit-background-clip: text;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    font-size: 0.9em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.auth-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    background: var(--input-bg);
+    color: var(--input-text);
+    margin-top: 8px;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary);
+}
+
+.auth-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.auth-footer {
+    margin-top: 25px;
+    color: var(--text-secondary);
+}
+
+.auth-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 700;
+    transition: color 0.3s ease;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+    color: var(--accent);
+}
+
+.flash-message {
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+.flash-message.success {
+    background-color: rgba(74, 222, 128, 0.2);
+    border-color: #4ade80;
+    color: #4ade80;
+}
+
+.flash-message.danger {
+    background-color: rgba(255, 107, 107, 0.2);
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+.flash-message.info {
+    background-color: rgba(96, 165, 250, 0.2);
+    border-color: #60a5fa;
+    color: #60a5fa;
+}
+
+/* --- END: AUTHENTICATION PAGE STYLES --- */
+
+/* --- START: AUTH LINKS IN HEADER --- */
+.auth-links {
+    position: absolute;
+    top: 5px;
+    right: 100px; /* Position it left of the theme toggle */
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+.auth-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 700;
+    transition: color 0.3s;
+}
+.auth-links a:hover {
+    color: var(--primary);
+}
+.username-display {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+/* --- END: AUTH LINKS IN HEADER --- */
