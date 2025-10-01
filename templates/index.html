@@ -1,112 +1,88 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MathExprWeb — Expression Tool</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Algebra Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="theme-dark">
-  <header class="topbar">
-    <div class="brand">
-      <h1>MathExprWeb</h1>
-      <p class="tag">Expand · Simplify · Factor · Substitute · Integrate</p>
+<body data-theme="dark">
+    <div class="floating-particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🧮 Algebra Calculator</h1>
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+        </div>
+        <p class="subtitle">Expand, Simplify, Factor, Substitute & Integrate Algebraic Expressions</p>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="expand">Expand</button>
+            <button class="mode-btn" data-mode="simplify">Simplify</button>
+            <button class="mode-btn" data-mode="factor">Factor</button>
+            <button class="mode-btn" data-mode="substitute">Substitute</button>
+            <button class="mode-btn" data-mode="integrate">Integrate</button>
+            <button class="mode-btn" data-mode="resimplify">Re-Simplify</button>
+        </div>
+
+        <div class="info-box" id="modeInfo">
+            <h3>Expand Mode</h3>
+            <ul>
+                <li>Expands algebraic expressions</li>
+                <li>Example: (x+2)(x+3) → x² + 5x + 6</li>
+                <li>Supports powers, products, and nested expressions</li>
+            </ul>
+        </div>
+
+        <div class="input-section">
+            <label for="expression">Expression</label>
+            <div class="input-wrapper">
+                <input type="text" id="expression" placeholder="e.g., (x+2)^2 or 3x²+6x">
+            </div>
+            <div class="quick-insert">
+                <button class="quick-btn" data-insert="²">x²</button>
+                <button class="quick-btn" data-insert="³">x³</button>
+                <button class="quick-btn" data-insert="^">^</button>
+                <button class="quick-btn" data-insert="(">(</button>
+                <button class="quick-btn" data-insert=")">)</button>
+                <button class="quick-btn" data-insert="*">×</button>
+                <button class="quick-btn" data-insert="+">+</button>
+                <button class="quick-btn" data-insert="-">−</button>
+                <button class="quick-btn" data-insert="sin">sin</button>
+                <button class="quick-btn" data-insert="cos">cos</button>
+                <button class="quick-btn" data-insert="tan">tan</button>
+                <button class="quick-btn" data-insert="log">log</button>
+                <button class="quick-btn" data-insert="exp">exp</button>
+                <button class="quick-btn" data-insert="sqrt">√</button>
+            </div>
+            <p class="helper-text" id="helperText">Use ^ or superscripts (²³⁴) for powers. Implicit multiplication supported: 2x, xy, (x+1)(x+2)</p>
+        </div>
+
+        <button class="calculate-btn" id="calculateBtn">
+            <span id="btnText">Calculate</span>
+            <span id="btnLoader" class="loader" style="display: none;"></span>
+        </button>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-label">Result</div>
+            <div class="result-content" id="resultContent"></div>
+            <div class="latex-section" id="latexSection" style="display: none;">
+                <div class="latex-label">LaTeX:</div>
+                <div class="latex-content" id="latexContent"></div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <div class="history-title">📜 History</div>
+                <button class="clear-history-btn" id="clearHistoryBtn">Clear All</button>
+            </div>
+            <div id="historyContent">
+                <div class="empty-history">No calculations yet</div>
+            </div>
+        </div>
     </div>
-    <div class="controls-top">
-      <select id="quickExamples" aria-label="Quick examples" title="Insert example">
-        <option value="">— Examples —</option>
-        <option value="(x+1)^2 * (x-2)">(x+1)^2 * (x-2)</option>
-        <option value="sin(x)*cos(x)">sin(x)*cos(x)</option>
-        <option value="exp(t)*exp(exp(t)); t">exp(t)*exp(exp(t)) ; t</option>
-      </select>
-      <button id="themeToggle" title="Toggle theme" aria-pressed="false">🌙</button>
-    </div>
-  </header>
 
-  <main class="container">
-    <section class="card input-card" aria-labelledby="exprLabel">
-      <div class="label-row">
-        <label id="exprLabel" for="expr">Expression</label>
-        <div class="hint">Use <code>;</code> to pass variable or limits → <code>expr ; x</code> or <code>expr ; x=0,pi</code></div>
-      </div>
-
-      <textarea id="expr" placeholder="Type expression. Example: (x+1)^2 * (x-2)">(x+1)^2 * (x-2)</textarea>
-
-      <!-- MODE BUTTONS -->
-      <div class="modes-row">
-        <div id="modeButtons" class="mode-buttons" role="tablist" aria-label="Operations">
-          <button class="mode-btn" data-mode="expand" aria-pressed="false">Expand</button>
-          <button class="mode-btn" data-mode="simplify" aria-pressed="false">Simplify</button>
-          <button class="mode-btn" data-mode="factor" aria-pressed="false">Factor</button>
-          <button class="mode-btn" data-mode="substitute" aria-pressed="false">Substitute</button>
-          <button class="mode-btn" data-mode="integrate" aria-pressed="false">Integrate</button>
-        </div>
-
-        <div class="mode-actions">
-          <div class="btn-group">
-            <button id="run" class="primary">Run</button>
-            <button id="copy" class="muted">Copy Result</button>
-          </div>
-          <div class="extras">
-            <label class="small">Precision</label>
-            <input id="precision" type="number" min="3" max="12" step="1" value="6">
-          </div>
-        </div>
-      </div>
-
-      <div id="exprHelp" class="small muted">Tip: Unicode superscripts (x²), implicit multiplication (2x), and caret (^) are supported.</div>
-    </section>
-
-    <section class="card results-card" aria-live="polite">
-      <div class="results-header">
-        <h2>Result</h2>
-        <div class="result-actions">
-          <button id="simplifyBtn" class="muted">Simplify</button>
-          <button id="toggleHistory" class="muted">History</button>
-          <button id="clearHistory" class="muted">Clear</button>
-        </div>
-      </div>
-
-      <pre id="resultText" class="result-text">—</pre>
-
-      <!-- Mode explanation (updates on selecting a mode) -->
-      <div id="modeDescription" class="mode-description">
-        <strong>Mode</strong>
-        <p class="muted">Select an operation above to see a short explanation.</p>
-      </div>
-
-      <!-- Separate input/output LaTeX panels -->
-      <div class="latex-panels">
-        <div class="latex-panel">
-          <div class="panel-title small muted">Input (live preview)</div>
-          <div id="inputMathRender" class="math-render"></div>
-        </div>
-        <div class="latex-panel">
-          <div class="panel-title small muted">Output (results)</div>
-          <div id="outputMathRender" class="math-render"></div>
-        </div>
-      </div>
-
-      <div class="meta-row">
-        <div id="log" class="muted">Ready.</div>
-        <div id="timing" class="muted">—</div>
-      </div>
-
-      <details id="historyPanel" class="history" style="display:none">
-        <summary>Last results (local)</summary>
-        <ul id="historyList" class="history-list"></ul>
-      </details>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <small>Local mode or deploy to Render/Heroku. Use ngrok for public testing.</small>
-  </footer>
-
-  <script src="/static/js/app.js" defer></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

@@ -1,218 +1,273 @@
-// static/js/app.js — mode buttons + descriptions + rest of features
-(() => {
-  // DOM refs
-  const exprEl = document.getElementById('expr');
-  const runBtn = document.getElementById('run');
-  const resultText = document.getElementById('resultText');
-  const inputMathRender = document.getElementById('inputMathRender');
-  const outputMathRender = document.getElementById('outputMathRender');
-  const modeButtonsContainer = document.getElementById('modeButtons');
-  const modeDescription = document.getElementById('modeDescription');
-  const copyBtn = document.getElementById('copy');
-  const simplifyBtn = document.getElementById('simplifyBtn');
-  const quickExamples = document.getElementById('quickExamples');
-  const themeToggle = document.getElementById('themeToggle');
-  const timingEl = document.getElementById('timing');
-  const logEl = document.getElementById('log');
+// App State
+let currentMode = 'expand';
+let history = [];
+let currentTheme = 'dark';
 
-  // history refs
-  const historyList = document.getElementById('historyList');
-  const historyPanel = document.getElementById('historyPanel');
-  const toggleHistoryBtn = document.getElementById('toggleHistory');
-  const clearHistoryBtn = document.getElementById('clearHistory');
-
-  const precisionEl = document.getElementById('precision');
-
-  // mode + descriptions
-  const MODES = {
-    expand: { title: "Expand", desc: "Expands algebraic expressions. Example: (x+2)(x+3) → x² + 5x + 6" },
-    simplify: { title: "Simplify", desc: "Simplifies algebraic/trigonometric expressions to a compact form." },
-    factor: { title: "Factor", desc: "Factorizes expressions into products of simpler factors." },
-    substitute: { title: "Substitute", desc: "Substitute values into expressions. Use `;` (e.g., expr ; x=2)" },
-    integrate: { title: "Integrate", desc: "Compute indefinite/definite integrals. Use `; x` to specify variable or limits." }
-  };
-
-  let selectedMode = 'expand';
-  let lastOutputLatex = '';
-
-  // Initialize mode buttons behaviors
-  function setActiveMode(mode) {
-    selectedMode = mode;
-    // update button visuals
-    const btns = modeButtonsContainer.querySelectorAll('.mode-btn');
-    btns.forEach(b => {
-      if (b.dataset.mode === mode) { b.classList.add('active'); b.setAttribute('aria-pressed','true'); }
-      else { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); }
-    });
-    // update description
-    const info = MODES[mode] || {title:mode, desc:''};
-    modeDescription.innerHTML = `<strong>${info.title} Mode</strong><p class="muted">${info.desc}</p>`;
-  }
-
-  // attach click listeners to buttons
-  modeButtonsContainer.addEventListener('click', (ev) => {
-    const btn = ev.target.closest('.mode-btn');
-    if (!btn) return;
-    const mode = btn.dataset.mode;
-    setActiveMode(mode);
-  });
-
-  // initial active mode
-  setActiveMode(selectedMode);
-
-  // rendering helpers (MathJax)
-  function renderInputMath(l) {
-    if (!inputMathRender) return;
-    inputMathRender.innerHTML = l ? '$$' + l + '$$' : '';
-    if (window.MathJax && window.MathJax.typesetPromise) {
-      MathJax.typesetClear();
-      MathJax.typesetPromise([inputMathRender]).catch(()=>{});
+// Mode Descriptions
+const modeDescriptions = {
+    expand: {
+        title: 'Expand Mode',
+        items: [
+            'Expands algebraic expressions with trig support',
+            'Example: (x+2)(x+3) → x² + 5x + 6',
+            'Example: sin(2x) → 2sin(x)cos(x)'
+        ],
+        helper: 'Use ^ or superscripts (²³⁴) for powers. Implicit multiplication supported: 2x, xy, (x+1)(x+2)'
+    },
+    simplify: {
+        title: 'Simplify Mode',
+        items: [
+            'Simplifies and factors expressions',
+            'Example: x²+5x+6 → (x+2)(x+3)',
+            'Combines like terms and reduces complexity'
+        ],
+        helper: 'Algebraic and trigonometric simplification. Supports sin, cos, tan, log, exp, sqrt.'
+    },
+    factor: {
+        title: 'Factor Mode',
+        items: [
+            'Factors expressions into products',
+            'Example: x²-4 → (x-2)(x+2)',
+            'Works with polynomials and trig expressions'
+        ],
+        helper: 'Factors polynomials and trigonometric expressions when possible.'
+    },
+    substitute: {
+        title: 'Substitute Mode',
+        items: [
+            'Evaluates expressions with variable values',
+            'Example: 2x²+3x; x=5 → 65',
+            'Supports multiple variables'
+        ],
+        helper: 'Format: expr; var1=val1, var2=val2. Example: x²+y²; x=3, y=4'
+    },
+    integrate: {
+        title: 'Integration Mode',
+        items: [
+            'Integrates expressions (indefinite or definite)',
+            'Indefinite: expr or expr; x',
+            'Definite: expr; x=a,b'
+        ],
+        helper: 'Examples: "x^2" → ∫x²dx, "x^2; x" → ∫x²dx, "x^2; x=0,1" → definite integral from 0 to 1'
+    },
+    resimplify: {
+        title: 'Re-Simplify Mode',
+        items: [
+            'Aggressively simplifies already computed results',
+            'Applies trig simplification and log combining',
+            'Useful for cleaning up integration results'
+        ],
+        helper: 'Paste a previous result to simplify it further. Automatically strips "+ C" from indefinite integrals.'
     }
-  }
-  function renderOutputMath(l) {
-    if (!outputMathRender) return;
-    outputMathRender.innerHTML = l ? '$$' + l + '$$' : '';
-    lastOutputLatex = l || '';
-    if (window.MathJax && window.MathJax.typesetPromise) {
-      MathJax.typesetClear();
-      MathJax.typesetPromise([outputMathRender]).catch(()=>{});
+};
+
+// Initialize particles
+function createFloatingParticles() {
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        particlesContainer.appendChild(particle);
     }
-  }
+}
 
-  // debounce preview
-  let previewTimer = null;
-  function schedulePreview() {
-    if (previewTimer) clearTimeout(previewTimer);
-    previewTimer = setTimeout(()=> {
-      const text = exprEl.value.trim();
-      if (!text) { renderInputMath(''); return; }
-      const latexGuess = text.replace(/\^([^\s\^]+)/g, (m,g1)=>'^{' + g1 + '}');
-      renderInputMath(latexGuess);
-    }, 250);
-  }
+// Theme Toggle
+function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', currentTheme);
+    document.getElementById('themeToggle').textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+}
 
-  // HTTP helper
-  async function postSolve(expr, mode) {
-    const resp = await fetch('/api/solve', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({expr, mode})
+// Update Mode Info
+function updateModeInfo() {
+    const info = modeDescriptions[currentMode];
+    const infoBox = document.getElementById('modeInfo');
+    const helperText = document.getElementById('helperText');
+    
+    infoBox.innerHTML = `
+        <h3>${info.title}</h3>
+        <ul>
+            ${info.items.map(item => `<li>${item}</li>`).join('')}
+        </ul>
+    `;
+    
+    helperText.textContent = info.helper;
+}
+
+// Mode Button Click Handlers
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        updateModeInfo();
     });
-    const data = await resp.json().catch(()=>({ok:false,error:'Invalid JSON'}));
-    return {status: resp.status, data};
-  }
+});
 
-  // Run action -- uses selectedMode
-  runBtn.addEventListener('click', async ()=>{
-    const expr = exprEl.value.trim();
-    if(!expr){ setLog('Expression empty.'); return; }
-    setLog('Sending request...');
-    const t0 = performance.now();
+// Quick Insert Buttons
+document.querySelectorAll('.quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById('expression');
+        const insert = btn.dataset.insert;
+        const pos = input.selectionStart;
+        const val = input.value;
+        input.value = val.slice(0, pos) + insert + val.slice(pos);
+        input.focus();
+        input.selectionStart = input.selectionEnd = pos + insert.length;
+    });
+});
+
+// Show/Hide Loading State
+function setLoading(isLoading) {
+    const btn = document.getElementById('calculateBtn');
+    const btnText = document.getElementById('btnText');
+    const btnLoader = document.getElementById('btnLoader');
+    
+    btn.disabled = isLoading;
+    btnText.style.display = isLoading ? 'none' : 'inline';
+    btnLoader.style.display = isLoading ? 'inline-block' : 'none';
+}
+
+// Display Result
+function displayResult(result, latex = null, isError = false) {
+    const resultSection = document.getElementById('resultSection');
+    const resultContent = document.getElementById('resultContent');
+    const latexSection = document.getElementById('latexSection');
+    const latexContent = document.getElementById('latexContent');
+    
+    resultContent.textContent = result;
+    
+    if (isError) {
+        resultContent.classList.add('error');
+        latexSection.style.display = 'none';
+    } else {
+        resultContent.classList.remove('error');
+        
+        if (latex) {
+            latexContent.textContent = latex;
+            latexSection.style.display = 'block';
+        } else {
+            latexSection.style.display = 'none';
+        }
+    }
+    
+    resultSection.classList.add('show');
+}
+
+// Process Expression via API
+async function processExpression() {
+    const exprInput = document.getElementById('expression').value.trim();
+    
+    if (!exprInput) {
+        displayResult('❌ Please enter an expression', null, true);
+        return;
+    }
+    
+    setLoading(true);
+    
     try {
-      const {status, data} = await postSolve(expr, selectedMode);
-      const dur = (performance.now() - t0).toFixed(0);
-      if (timingEl) timingEl.textContent = `${dur} ms`;
-      if (data && data.ok) {
-        resultText.textContent = data.result || '';
-        renderOutputMath(data.latex || data.result || '');
-        setLog('Success.');
-        saveHistory({expr, mode: selectedMode, result: data.result || '', latex: data.latex || ''});
-      } else {
-        resultText.textContent = data && data.error ? data.error : 'Server error';
-        renderOutputMath('');
-        setLog(data && data.error ? data.error : 'Error from server.');
-      }
-    } catch(e) {
-      setLog('Network error: ' + e);
+        const response = await fetch('/api/solve', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                mode: currentMode,
+                expr: exprInput
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok) {
+            displayResult(data.result, data.latex || null, false);
+            addToHistory(currentMode, exprInput, data.result, data.latex);
+        } else {
+            displayResult(data.error || 'An error occurred', null, true);
+        }
+    } catch (error) {
+        displayResult(`❌ Network error: ${error.message}`, null, true);
+    } finally {
+        setLoading(false);
     }
-  });
+}
 
-  // copy result
-  copyBtn.addEventListener('click', ()=> {
-    const txt = resultText.textContent || '';
-    if (!txt) return setLog('No result to copy.');
-    navigator.clipboard?.writeText(txt).then(()=> setLog('Copied.'), ()=> setLog('Copy failed.'));
-  });
+// Add to History
+function addToHistory(mode, expr, result, latex = null) {
+    const entry = {
+        mode,
+        expression: expr,
+        result,
+        latex,
+        timestamp: new Date().toLocaleString()
+    };
+    
+    history.unshift(entry);
+    if (history.length > 20) history.pop();
+    
+    updateHistoryDisplay();
+}
 
-  // simplify result (resimplify)
-  simplifyBtn.addEventListener('click', async ()=> {
-    const text = resultText.textContent.trim();
-    if (!text) return setLog('No result to simplify.');
-    try {
-      const resp = await fetch('/api/solve', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({expr: text, mode:'resimplify'})
-      });
-      const data = await resp.json().catch(()=>({ok:false,error:'Invalid JSON'}));
-      if (data && data.ok) {
-        resultText.textContent = data.result || '';
-        renderOutputMath(data.latex || data.result || '');
-        setLog('Simplified.');
-      } else setLog(data.error || 'Simplify failed.');
-    } catch(e) { setLog('Network error: ' + e); }
-  });
-
-  // quick examples
-  if (quickExamples) quickExamples.addEventListener('change', (e)=> {
-    if (e.target.value) { exprEl.value = e.target.value; schedulePreview(); quickExamples.value = ''; }
-  });
-
-  // theme toggle
-  if (themeToggle) themeToggle.addEventListener('click', ()=>{
-    const body = document.body;
-    const isLight = body.classList.toggle('theme-light');
-    themeToggle.textContent = isLight ? '☀️' : '🌙';
-  });
-
-  // live preview hookup
-  exprEl.addEventListener('input', schedulePreview);
-  schedulePreview();
-
-  // Logging helper
-  function setLog(m){ if (logEl) logEl.textContent = m; }
-
-  /* -------------------------
-     Simple local history (keeps existing logic)
-     ------------------------- */
-  const HISTORY_KEY = 'mathpro_history_v1';
-  function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }catch{return []} }
-  function saveHistory(arr){ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0,50))); populateHistory(); }
-  function saveHistoryItem(item){ const arr = loadHistory(); arr.unshift(item); saveHistory(arr); }
-  function saveHistory(item){ const arr = loadHistory(); arr.unshift(item); localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0,50))); populateHistory(); }
-  function populateHistory() {
-    const arr = loadHistory();
-    historyList.innerHTML = '';
-    if (!arr.length) { const li = document.createElement('li'); li.className='muted'; li.textContent='No history yet'; historyList.appendChild(li); return; }
-    arr.forEach((it, idx) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<div><strong>${escapeHtml(it.mode)}</strong>: <code>${escapeHtml(it.expr)}</code></div>
-                      <div style="display:flex;gap:6px">
-                        <button data-idx="${idx}" data-action="load" class="muted">Load</button>
-                        <button data-idx="${idx}" data-action="del" class="muted">Delete</button>
-                      </div>`;
-      historyList.appendChild(li);
+// Update History Display
+function updateHistoryDisplay() {
+    const historyContent = document.getElementById('historyContent');
+    
+    if (history.length === 0) {
+        historyContent.innerHTML = '<div class="empty-history">No calculations yet</div>';
+        return;
+    }
+    
+    historyContent.innerHTML = history.map((entry, index) => `
+        <div class="history-item" data-index="${index}">
+            <div class="history-mode">${entry.mode.toUpperCase()}</div>
+            <div class="history-expr">${entry.expression}</div>
+            <div class="history-result">→ ${entry.result}</div>
+        </div>
+    `).join('');
+    
+    // Add click handlers to history items
+    document.querySelectorAll('.history-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const index = parseInt(item.dataset.index);
+            const entry = history[index];
+            
+            document.getElementById('expression').value = entry.expression;
+            
+            // Switch to the mode used in history
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === entry.mode);
+            });
+            currentMode = entry.mode;
+            updateModeInfo();
+            
+            // Display the result
+            displayResult(entry.result, entry.latex, false);
+        });
     });
-  }
-  if (historyList) historyList.addEventListener('click', (ev)=> {
-    const btn = ev.target.closest('button');
-    if (!btn) return;
-    const i = Number(btn.dataset.idx); const action = btn.dataset.action;
-    const arr = loadHistory();
-    if (action === 'load') {
-      const it = arr[i]; if (it) { exprEl.value = it.expr; setActiveFromMode(it.mode); schedulePreview(); }
-    } else if (action === 'del') { arr.splice(i,1); localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); populateHistory(); }
-  });
+}
 
-  function setActiveFromMode(mode) { setActiveMode(mode); } // helper to keep naming consistent
+// Clear History
+function clearHistory() {
+    history = [];
+    updateHistoryDisplay();
+}
 
-  // expose toggleHistory/clearHistory
-  if (toggleHistoryBtn) toggleHistoryBtn.addEventListener('click', ()=> { historyPanel.style.display = historyPanel.style.display === 'block' ? 'none' : 'block'; populateHistory(); });
-  if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', ()=> { localStorage.removeItem(HISTORY_KEY); populateHistory(); });
+// Event Listeners
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+document.getElementById('calculateBtn').addEventListener('click', processExpression);
+document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
 
-  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+// Enter key support
+document.getElementById('expression').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        processExpression();
+    }
+});
 
-  // on load
-  populateHistory();
-  setLog('Ready.');
-})();
+// Initialize
+createFloatingParticles();
+updateModeInfo();
