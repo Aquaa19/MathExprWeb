@@ -1,8 +1,19 @@
+// MathExprWeb/static/js/app.js
 // App State
 let currentMode = 'expand';
 let history = [];
 let currentTheme = 'dark';
 let currentLatex = null;  // Store current LaTeX for export
+
+// Debounce Utility Function
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
 
 // Mode Descriptions
 const modeDescriptions = {
@@ -56,11 +67,12 @@ const modeDescriptions = {
     differentiate: {
         title: 'Differentiation Mode',
         items: [
-            'Finds the derivative of an expression',
-            'Format: expr or expr; var, order',
-            'Example: sin(x^2); x, 2 (for second derivative)'
+            '**Explicit/Partial**: expr; var, order',
+            'Example: sin(x^2); x, 2 (second derivative)',
+            '**Implicit**: equation; dependent_var, independent_var',
+            'Example: x²+y²=1; y, x (find dy/dx)'
         ],
-        helper: 'Format: expr; var, order. Default is first derivative w.r.t. x. Example: x^3; x, 2'
+        helper: 'Format: expr/equation; var, order/var. Use "=" for implicit differentiation. Default is first derivative w.r.t. x.'
     },
     // REMOVED: resimplify mode
     laplace_t: {
@@ -91,71 +103,6 @@ const modeDescriptions = {
         helper: 'Format: expr; input_var, transform_var. Example: x**a*exp(-x); x, s'
     }
 };
-
-//Debounce utility
-function debounce(func, delay) {
-    let timeout;
-    return function(...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), delay);
-    };
-}
-
-async function updateLiveRender() {
-    const exprInput = document.getElementById('expression').value;
-    const container = document.getElementById('liveRenderContainer');
-    const renderDiv = document.getElementById('liveLatexRender');
-
-    if (!exprInput.trim()) {
-        container.style.display = 'none';
-        renderDiv.innerHTML = '';
-        return;
-    }
-    
-    // Show the container
-    container.style.display = 'block';
-
-    try {
-        const response = await fetch('/api/render_latex', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ expr: exprInput })
-        });
-        
-        const data = await response.json();
-        
-        if (data.ok && data.latex) {
-            // Render LaTeX using KaTeX
-            renderDiv.innerHTML = '';
-            // KaTeX must be wrapped in $$ for displayMode:true to work correctly
-            katex.render(data.latex, renderDiv, {
-                throwOnError: false,
-                displayMode: true 
-            });
-            renderDiv.classList.remove('error-message');
-        } else if (data.ok && data.latex === "") {
-             // Expression parsed to empty or simple text not needing KaTeX
-            renderDiv.innerHTML = '';
-            container.style.display = 'none';
-        } else if (data.error) {
-            // Display SymPy parsing error as plain text
-            const cleanError = data.error.replace('❌ Error parsing expression: ', '').replace('❌ Error: Expression cannot be empty.', '');
-            renderDiv.innerHTML = `<span class="error-message">⚠️ ${cleanError}</span>`;
-            renderDiv.classList.add('error-message');
-        } else {
-            renderDiv.innerHTML = `<span class="error-message">⚠️ Unknown rendering error.</span>`;
-            renderDiv.classList.add('error-message');
-        }
-    } catch (error) {
-        console.error('Live render network error:', error);
-        renderDiv.innerHTML = `<span class="error-message">⚠️ Network error.</span>`;
-        renderDiv.classList.add('error-message');
-    }
-}
-
-// Debounce the live render function to prevent excessive API calls
-const debouncedUpdateLiveRender = debounce(updateLiveRender, 300);
 
 // Initialize particles
 function createFloatingParticles() {
@@ -214,6 +161,9 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
         input.value = val.slice(0, pos) + insert + val.slice(pos);
         input.focus();
         input.selectionStart = input.selectionEnd = pos + insert.length;
+        
+        // Trigger live render update
+        debouncedUpdateLiveRender();
     });
 });
 
@@ -358,6 +308,62 @@ async function processResimplification() {
     }
 }
 
+// Function to update the live LaTeX preview
+async function updateLiveRender() {
+    const exprInput = document.getElementById('expression').value;
+    const container = document.getElementById('liveRenderContainer');
+    const renderDiv = document.getElementById('liveLatexRender');
+
+    if (!exprInput.trim()) {
+        container.style.display = 'none';
+        renderDiv.innerHTML = '';
+        return;
+    }
+    
+    // Show the container
+    container.style.display = 'block';
+
+    try {
+        const response = await fetch('/api/render_latex', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expr: exprInput })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok && data.latex) {
+            // Render LaTeX using KaTeX
+            renderDiv.innerHTML = '';
+            // KaTeX must be wrapped in $$ for displayMode:true to work correctly
+            katex.render(data.latex, renderDiv, {
+                throwOnError: false,
+                displayMode: true 
+            });
+            renderDiv.classList.remove('error-message');
+        } else if (data.ok && data.latex === "") {
+             // Expression parsed to empty or simple text not needing KaTeX
+            renderDiv.innerHTML = '';
+            container.style.display = 'none';
+        } else if (data.error) {
+            // Display SymPy parsing error as plain text
+            const cleanError = data.error.replace('❌ Error parsing expression: ', '').replace('❌ Error: Expression cannot be empty.', '');
+            renderDiv.innerHTML = `<span class="error-message">⚠️ ${cleanError}</span>`;
+            renderDiv.classList.add('error-message');
+        } else {
+            renderDiv.innerHTML = `<span class="error-message">⚠️ Unknown rendering error.</span>`;
+            renderDiv.classList.add('error-message');
+        }
+    } catch (error) {
+        console.error('Live render network error:', error);
+        renderDiv.innerHTML = `<span class="error-message">⚠️ Network error.</span>`;
+        renderDiv.classList.add('error-message');
+    }
+}
+
+// Debounce the live render function to prevent excessive API calls
+const debouncedUpdateLiveRender = debounce(updateLiveRender, 300);
+
 // Add to History
 function addToHistory(mode, expr, result, latex = null) {
     const entry = {
@@ -408,6 +414,9 @@ function updateHistoryDisplay() {
             
             // Display the result
             displayResult(entry.result, entry.latex, false);
+            
+            // Trigger live render update for the restored expression
+            debouncedUpdateLiveRender();
         });
     });
 }
@@ -422,7 +431,9 @@ function clearHistory() {
 document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 document.getElementById('calculateBtn').addEventListener('click', processExpression);
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
-document.getElementById('resimplifyBtn').addEventListener('click', processResimplification);
+document.getElementById('resimplifyBtn').addEventListener('click', processResimplification); // NEW LISTENER
+
+// NEW: Live Render listener
 document.getElementById('expression').addEventListener('input', debouncedUpdateLiveRender);
 
 // Export LaTeX functionality (omitted for brevity, remains unchanged)

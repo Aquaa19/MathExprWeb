@@ -12,7 +12,8 @@ from sympy import (
     sinh, cosh, tanh,
     exp, log, sqrt, Abs, pi, E, trigsimp,
     apart,
-    diff as sympy_diff # ADDED: for differentiation
+    diff as sympy_diff, # ADDED: for differentiation
+    idiff # NEW: for implicit differentiation
 )
 from sympy.parsing.sympy_parser import (
     parse_expr, standard_transformations,
@@ -141,7 +142,7 @@ def _parse_expression_string(expression_string):
     except Exception as e:
         return None, f"❌ Error parsing expression: {e}"
 
-# --- New Helper for Formatting Output ---
+# --- Helper for Formatting Output ---
 
 def _format_output(sympy_result):
     """Converts a SymPy object into both display and LaTeX strings."""
@@ -179,14 +180,34 @@ def get_latex_from_expr(expression_string):
     if not expr_for_preview:
         return "", None
         
+    # If it's an equation, we parse both sides and show them separated
+    if '=' in expr_for_preview:
+        eq_parts = expr_for_preview.split('=', 1)
+        lhs_str = eq_parts[0]
+        rhs_str = eq_parts[1] if len(eq_parts) > 1 else '0' # Default RHS to 0 if empty
+        
+        lhs_parsed, err_lhs = _parse_expression_string(lhs_str)
+        rhs_parsed, err_rhs = _parse_expression_string(rhs_str)
+        
+        if err_lhs: return None, err_lhs
+        if err_rhs: return None, err_rhs
+        
+        try:
+            lhs_latex = sympy_latex(lhs_parsed)
+            rhs_latex = sympy_latex(rhs_parsed)
+            return f"{lhs_latex} = {rhs_latex}", None
+        except Exception:
+            # Fallback for latex failure
+            return f"\\text{{{str(lhs_parsed)} = {str(rhs_parsed)}}}", None
+
+
     parsed_expr, error = _parse_expression_string(expr_for_preview)
     if error:
         # If parsing fails, return the error message for display
         return None, error 
         
     try:
-        # Use str(parsed_expr) as a fallback in the _format_output function.
-        # Here we only need the LaTeX part, if it fails we don't return an error here.
+        # Here we only need the LaTeX part
         latex = sympy_latex(parsed_expr)
         return latex, None
     except Exception:
@@ -286,52 +307,135 @@ def substitute_expr(full_input_string):
 
 def differentiate_expr(full_input_string):
     """
-    Differentiates an expression. Input: expr or expr; var, order
+    Differentiates an expression (Explicit/Partial) or an equation (Implicit).
+    Explicit Input: expr or expr; var, order (e.g., x^3; x, 2)
+    Implicit Input: equation=expr; dependent_var, independent_var (e.g., x^2+y^2=1; y, x)
     """
     parts = full_input_string.split(';', 1)
-    expression_string = parts[0].strip()
-    parsed_expr, error = _parse_expression_string(expression_string)
-    if error:
-        return None, None, error
+    expr_or_equation_string = parts[0].strip()
 
-    var = Symbol('x') # Default variable is 'x'
-    order = 1         # Default order is 1 (first derivative)
+    if not expr_or_equation_string:
+        return None, None, "❌ Error: Expression or equation cannot be empty."
 
-    if len(parts) > 1 and parts[1].strip():
-        var_part = parts[1].strip()
-        # Expecting: "x" (variable only) or "x, 2" (variable and order)
-        var_parts_split = [p.strip() for p in var_part.split(',', 1)]
+    # --- Implicit Differentiation Check ---
+    if '=' in expr_or_equation_string:
+        # Implicit Differentiation Case: F(x, y) = 0
+        eq_parts = expr_or_equation_string.split('=', 1)
         
-        var_name = var_parts_split[0]
-        try:
-            var = Symbol(var_name)
-        except Exception as e:
-            return None, None, f"❌ Error: Invalid variable name '{var_name}'"
+        # Calculate F = LHS - RHS
+        lhs_parsed, err_lhs = _parse_expression_string(eq_parts[0])
+        if err_lhs: return None, None, f"❌ Error parsing LHS: {err_lhs}"
+
+        if len(eq_parts) > 1 and eq_parts[1].strip():
+            rhs_parsed, err_rhs = _parse_expression_string(eq_parts[1])
+            if err_rhs: return None, None, f"❌ Error parsing RHS: {err_rhs}"
+        else:
+            # If RHS is empty (e.g., x^2+y^2=) treat as = 0
+            rhs_parsed = sympify(0)
             
-        if len(var_parts_split) > 1:
+        F_expr = lhs_parsed - rhs_parsed
+
+        # Parse variables part: dependent_var, independent_var
+        dependent_var_name = 'y' # Default dependent var
+        independent_var_name = 'x' # Default independent var
+        
+        if len(parts) > 1 and parts[1].strip():
+            var_part = parts[1].strip()
+            # Split by comma to find dependent and independent variables
+            var_parts_split = [p.strip() for p in var_part.split(',', 2)]
+            
+            if len(var_parts_split) == 1:
+                # If only one var is provided, assume it's the dependent variable and independent is 'x'
+                dependent_var_name = var_parts_split[0]
+            elif len(var_parts_split) >= 2:
+                # Both dependent and independent are provided (e.g., y, x)
+                dependent_var_name = var_parts_split[0]
+                independent_var_name = var_parts_split[1]
+            
+        try:
+            dependent = Symbol(dependent_var_name)
+            independent = Symbol(independent_var_name)
+        except Exception as e:
+            return None, None, f"❌ Error: Invalid variable names: {e}"
+
+        try:
+            # SymPy idiff signature: idiff(eq, dependent_var, independent_var)
+            differentiated = idiff(F_expr, dependent, independent)
+            return _format_output(differentiated)
+        except Exception as e:
+            return None, None, f"❌ Error during implicit differentiation: {e}"
+
+    # --- Explicit/Partial Differentiation Case (Existing Logic) ---
+    else:
+        expression_string = expr_or_equation_string
+        parsed_expr, error = _parse_expression_string(expression_string)
+        if error:
+            return None, None, error
+
+        var = Symbol('x') # Default variable is 'x'
+        order = 1         # Default order is 1 (first derivative)
+
+        if len(parts) > 1 and parts[1].strip():
+            var_part = parts[1].strip()
+            # Expecting: "x" (variable only) or "x, 2" (variable and order)
+            var_parts_split = [p.strip() for p in var_part.split(',', 1)]
+            
+            var_name = var_parts_split[0]
             try:
-                order = int(var_parts_split[1])
-                if order <= 0:
-                    return None, None, "❌ Error: Differentiation order must be a positive integer."
-            except ValueError:
-                return None, None, f"❌ Error: Invalid order '{var_parts_split[1]}'. Must be an integer."
+                var = Symbol(var_name)
+            except Exception as e:
+                return None, None, f"❌ Error: Invalid variable name '{var_name}'"
+                
+            if len(var_parts_split) > 1:
+                try:
+                    order = int(var_parts_split[1])
+                    if order <= 0:
+                        return None, None, "❌ Error: Differentiation order must be a positive integer."
+                except ValueError:
+                    return None, None, f"❌ Error: Invalid order '{var_parts_split[1]}'. Must be an integer."
 
+        try:
+            # SymPy diff signature: diff(expr, var, order)
+            differentiated = sympy_diff(parsed_expr, var, order)
+            return _format_output(differentiated)
+        except Exception as e:
+            return None, None, f"❌ Error during differentiation: {e}"
+
+# --- Helper for Transform Functions ---
+
+def _parse_transform_request(full_input_string, expected_vars=2):
+    """
+    Parses Laplace/Fourier/Mellin Transform requests.
+    Input format: expr; input_var, transform_var
+    Returns: (parsed_expr, input_var, transform_var, error_or_None)
+    """
+    parts = full_input_string.split(';', 1)
+    expr_part = parts[0].strip()
+    
+    if not expr_part:
+        return None, None, None, "❌ Error: Expression cannot be empty."
+
+    parsed_expr, err = _parse_expression_string(expr_part)
+    if err:
+        return None, None, None, err
+
+    if len(parts) < 2 or not parts[1].strip():
+        return None, None, None, "❌ Error: Please specify input and transform variables. Format: expr; input_var, transform_var"
+
+    var_parts = [p.strip() for p in parts[1].split(',', expected_vars)]
+    
+    if len(var_parts) != expected_vars:
+        return None, None, None, f"❌ Error: Expected {expected_vars} variables (input, transform) but received {len(var_parts)}."
+    
     try:
-        # SymPy diff signature: diff(expr, var, order)
-        differentiated = sympy_diff(parsed_expr, var, order)
-        return _format_output(differentiated)
+        input_var = Symbol(var_parts[0])
+        transform_var = Symbol(var_parts[1])
     except Exception as e:
-        return None, None, f"❌ Error during differentiation: {e}"
+        return None, None, None, f"❌ Error: Invalid variable name: {e}"
 
-# --- Helper for Transform Functions (Omitted for brevity, remains unchanged) ---
-# ...
-# --- Integral Transform operations (Omitted for brevity, remains unchanged) ---
-# ...
-# --- Worker/timeout helper for heavy CAS operations (Omitted for brevity, remains unchanged) ---
-# ...
-# --- Integration support (Omitted for brevity, remains unchanged) ---
-# ...
-# --- Resimplify: re-simplify an already computed result (Omitted for brevity, remains unchanged) ---
+    return parsed_expr, input_var, transform_var, None
+
+# --- Integral Transform operations ---
 
 def laplace_transform_expr(full_input_string):
     """Laplace Transform: L{f(t)}(s) = F(s). Input: expr; t, s"""
@@ -372,7 +476,7 @@ def mellin_transform_expr(full_input_string):
     except Exception as e:
         return None, None, f"❌ Error during Mellin Transform: {e}"
 
-# --- Worker/timeout helper for heavy CAS operations (Omitted for brevity, remains unchanged) ---
+# --- Worker/timeout helper for heavy CAS operations ---
 def _worker_wrapper(fn, q, *args, **kwargs):
     """Run fn(*args, **kwargs) and put (result, latex, error) in queue."""
     try:
@@ -414,7 +518,7 @@ def _run_with_timeout(fn, args=(), kwargs=None, timeout=5):
     except Exception as e:
         return None, None, f"❌ Error retrieving worker result: {e}"
 
-# --- Integration support (Omitted for brevity, remains unchanged) ---
+# --- Integration support ---
 def _parse_integration_request(full_input_string):
     """
     Supported forms:
@@ -451,7 +555,7 @@ def _parse_integration_request(full_input_string):
                 a = sympify(a_str.strip())
                 b = sympify(b_str.strip())
                 var = Symbol(varname)
-                limits = (a, b)
+                limits = (var, a, b) 
             except Exception as e:
                 return None, None, None, f"❌ Error parsing variable/limits: {e}"
         else:
@@ -487,6 +591,16 @@ def _manualintegrate_worker(parsed_expr, var, limits):
         except Exception:
             # If apart fails (e.g., SymPy issues), continue with original expression
             pass
+            
+    # --- OPTIMIZATION FOR COMPLEX INTEGRALS LIKE sin(2x) * exp(...) ---
+    try:
+        # 1. Use trigsimp to handle basic trig identities
+        simplified_expr = trigsimp(parsed_expr)
+        # 2. Use factor with trig=True to expand sin(2x) etc., which is key for u-sub
+        parsed_expr = factor(simplified_expr, trig=True)
+    except Exception:
+        # Ignore simplification failure and proceed with the original expression.
+        pass
 
     # Use the powerful sympy_integrate directly to handle all complex cases
     if limits is None:
@@ -494,10 +608,9 @@ def _manualintegrate_worker(parsed_expr, var, limits):
         return sympy_integrate(parsed_expr, var)
     else:
         # Definite integral
-        a, b = limits
-        return sympy_integrate(parsed_expr, (var, a, b))
+        return sympy_integrate(parsed_expr, limits)
 
-def integrate_expr(full_input_string, timeout_seconds=6):
+def integrate_expr(full_input_string, timeout_seconds=20):
     """
     Integrates expression with optional variable and limits:
     - Input syntax: "expr" or "expr ; x" or "expr ; x=a,b"
@@ -543,7 +656,7 @@ def resimplify_expr(expression_string):
         s = simplify(parsed_expr)     # algebraic simplify
         s = trigsimp(s)               # trig simplification
 
-        # attempt to combine logs — import locally in case environment differs
+        # attempt to combine logs
         try:
             from sympy import logcombine
             # logcombine can sometimes raise for certain forms; guard it

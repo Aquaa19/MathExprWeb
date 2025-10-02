@@ -15,7 +15,7 @@ The calculator supports a comprehensive range of algebraic and calculus operatio
 ### Core Mathematics
 
 * **Algebraic:** Expand, Simplify, Factor, Substitute.
-* **Calculus:** Integrate (Indefinite & Definite), Differentiate (Nth-order derivatives).
+* **Calculus:** Integrate (Indefinite & Definite), Differentiate (Explicit, Partial, and **Implicit** for multiple variables), Nth-order derivatives.
 * **Integral Transforms:** Laplace Transform, Fourier Transform, Mellin Transform.
 * **Utility:** Re-Simplify previous results (accessible in the result section).
 
