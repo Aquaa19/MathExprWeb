@@ -92,6 +92,71 @@ const modeDescriptions = {
     }
 };
 
+//Debounce utility
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+async function updateLiveRender() {
+    const exprInput = document.getElementById('expression').value;
+    const container = document.getElementById('liveRenderContainer');
+    const renderDiv = document.getElementById('liveLatexRender');
+
+    if (!exprInput.trim()) {
+        container.style.display = 'none';
+        renderDiv.innerHTML = '';
+        return;
+    }
+    
+    // Show the container
+    container.style.display = 'block';
+
+    try {
+        const response = await fetch('/api/render_latex', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expr: exprInput })
+        });
+        
+        const data = await response.json();
+        
+        if (data.ok && data.latex) {
+            // Render LaTeX using KaTeX
+            renderDiv.innerHTML = '';
+            // KaTeX must be wrapped in $$ for displayMode:true to work correctly
+            katex.render(data.latex, renderDiv, {
+                throwOnError: false,
+                displayMode: true 
+            });
+            renderDiv.classList.remove('error-message');
+        } else if (data.ok && data.latex === "") {
+             // Expression parsed to empty or simple text not needing KaTeX
+            renderDiv.innerHTML = '';
+            container.style.display = 'none';
+        } else if (data.error) {
+            // Display SymPy parsing error as plain text
+            const cleanError = data.error.replace('❌ Error parsing expression: ', '').replace('❌ Error: Expression cannot be empty.', '');
+            renderDiv.innerHTML = `<span class="error-message">⚠️ ${cleanError}</span>`;
+            renderDiv.classList.add('error-message');
+        } else {
+            renderDiv.innerHTML = `<span class="error-message">⚠️ Unknown rendering error.</span>`;
+            renderDiv.classList.add('error-message');
+        }
+    } catch (error) {
+        console.error('Live render network error:', error);
+        renderDiv.innerHTML = `<span class="error-message">⚠️ Network error.</span>`;
+        renderDiv.classList.add('error-message');
+    }
+}
+
+// Debounce the live render function to prevent excessive API calls
+const debouncedUpdateLiveRender = debounce(updateLiveRender, 300);
+
 // Initialize particles
 function createFloatingParticles() {
     const particlesContainer = document.getElementById('particles');
@@ -357,7 +422,8 @@ function clearHistory() {
 document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 document.getElementById('calculateBtn').addEventListener('click', processExpression);
 document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
-document.getElementById('resimplifyBtn').addEventListener('click', processResimplification); // NEW LISTENER
+document.getElementById('resimplifyBtn').addEventListener('click', processResimplification);
+document.getElementById('expression').addEventListener('input', debouncedUpdateLiveRender);
 
 // Export LaTeX functionality (omitted for brevity, remains unchanged)
 document.getElementById('exportLatexBtn').addEventListener('click', () => {

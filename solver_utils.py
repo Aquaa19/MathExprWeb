@@ -164,6 +164,35 @@ def _format_output(sympy_result):
         
     return display + display_conditions, latex, None
 
+def get_latex_from_expr(expression_string):
+    """
+    Parses a string and attempts to convert it directly to LaTeX format.
+    Returns (latex_string, error_message_or_None).
+    """
+    if not expression_string.strip():
+        return "", None
+
+    # We use expression_string.split(';', 1)[0].strip() here to ensure we only
+    # parse the main expression part for the live preview, ignoring variables/limits
+    expr_for_preview = expression_string.split(';', 1)[0].strip()
+    
+    if not expr_for_preview:
+        return "", None
+        
+    parsed_expr, error = _parse_expression_string(expr_for_preview)
+    if error:
+        # If parsing fails, return the error message for display
+        return None, error 
+        
+    try:
+        # Use str(parsed_expr) as a fallback in the _format_output function.
+        # Here we only need the LaTeX part, if it fails we don't return an error here.
+        latex = sympy_latex(parsed_expr)
+        return latex, None
+    except Exception:
+        # Fallback to string if latex conversion itself fails
+        return f"\\text{{{str(parsed_expr)}}}", None
+
 # --- Basic operations (wrap parse + sympy calls) ---
 
 def expand_expr(expression_string):

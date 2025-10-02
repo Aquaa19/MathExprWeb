@@ -904,3 +904,29 @@ textarea {
     font-weight: 500;
 }
 /* --- END: AUTH LINKS IN HEADER --- */
+.live-render-container {
+    margin-top: 15px;
+    padding: 15px;
+    background: var(--card-bg); /* Use card background for a subtle box */
+    border-radius: 15px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-left: 5px solid var(--accent); /* Subtle accent color for a different feel than result */
+    min-height: 40px; /* Give it a minimal height */
+}
+
+/* Ensure Katex renders correctly inside */
+.live-render-container .katex {
+    font-size: 1.1em;
+    color: var(--text-primary);
+}
+
+/* Style for live error messages */
+.live-render-container .error-message {
+    color: var(--primary); /* Use primary color for helpful parsing errors */
+    font-family: 'Courier New', monospace;
+    font-size: 0.95em;
+    padding: 5px;
+    line-height: 1.5;
+}

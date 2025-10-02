@@ -23,7 +23,8 @@ The calculator supports a comprehensive range of algebraic and calculus operatio
 
 * **Modern Design:** A responsive, glassmorphism-themed UI that works on all devices.
 * **Dynamic Effects:** Features an animated, glowing border on the active input field and other subtle hover effects.
-* **Live LaTeX Preview:** Renders mathematical results beautifully using KaTeX.
+* **Live Input Preview:** Instantly renders the mathematical expression from the input field as you type using KaTeX.
+* **Live Result Rendering:** Renders calculation results beautifully using KaTeX.
 * **Theme Toggling:** Instantly switch between Dark (Teal/Emerald) and Light (Cherry) themes.
 
 ## 🛠️ Technology Stack
@@ -59,20 +60,3 @@ Execute the main `app.py` file. The application will start, and the SQLite datab
 
 python app.py
 The application will be available at `http://127.0.0.1:5000`.
-
-## 📁 Project Structure
-MathExprWeb/
-├── static/
-│ ├── css/style.css # All styles, including UI and auth pages
-│ └── js/app.js # Frontend logic for the calculator
-├── templates/
-│ ├── index.html # Main calculator page
-│ ├── login.html # User login page
-│ └── register.html # User registration page
-├── app.py # Main Flask application file (routes and app factory)
-├── extensions.py # Flask extension initializations (db, login_manager)
-├── forms.py # WTForms classes for login/registration
-├── models.py # SQLAlchemy database models (User, History)
-├── solver_utils.py # Core symbolic math processing logic with SymPy
-├── requirements.txt # Python package dependencies
-└── mathexpr.db # SQLite database file (created automatically)

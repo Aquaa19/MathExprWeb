@@ -31,7 +31,7 @@ def create_app():
         expand_expr, simplify_expr, factor_expr, substitute_expr,
         integrate_expr, resimplify_expr,
         laplace_transform_expr, fourier_transform_expr, mellin_transform_expr,
-        differentiate_expr
+        differentiate_expr, get_latex_from_expr
     )
     
     # --- Register Routes within the app context ---
@@ -72,6 +72,22 @@ def create_app():
     def logout():
         logout_user()
         return redirect(url_for('index'))
+    
+    @app.route('/api/render_latex', methods=['POST']) # NEW ROUTE FOR LIVE PREVIEW
+    def api_render_latex():
+        data = request.get_json() or {}
+        expr = data.get('expr', '')
+
+        if not expr.strip():
+            return jsonify({'ok': True, 'latex': ''})
+
+        latex, err = get_latex_from_expr(expr)
+        
+        if err:
+            # Return parsing errors directly for feedback in the live preview
+            return jsonify({'ok': False, 'error': err}) 
+
+        return jsonify({'ok': True, 'latex': latex})
 
     @app.route('/api/solve', methods=['POST'])
     def api_solve():
