@@ -26,3 +26,9 @@ Thumbs.db
 
 # IDE / JetBrains
 .idea/
+
+# Project scripts
+run_and_summarize.py
+run_tests.py
+test_cases_set_2.py
+test_cases.py

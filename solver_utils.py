@@ -5,7 +5,7 @@ import re
 import traceback
 from multiprocessing import Process, Queue
 from sympy import (
-    expand, simplify, factor, sympify, symbols, Symbol, latex as sympy_latex,
+    expand, S, simplify, factor, sympify, symbols, Symbol, latex as sympy_latex,
     integrate as sympy_integrate, Integral as SympyIntegral,
     sin, cos, tan, cot, sec, csc,
     asin, acos, atan, acot, asec, acsc,
@@ -13,7 +13,8 @@ from sympy import (
     exp, log, sqrt, Abs, pi, E, trigsimp,
     apart,
     diff as sympy_diff, # ADDED: for differentiation
-    idiff # NEW: for implicit differentiation
+    idiff, # NEW: for implicit differentiation
+    Function, Derivative # New for general chain rule
 )
 from sympy.parsing.sympy_parser import (
     parse_expr, standard_transformations,
@@ -45,94 +46,94 @@ def unicode_to_normal_expr(expr):
 
 def normal_to_unicode_expr(expr):
     """
-    Convert '**n' to unicode superscript and remove explicit '*' for nicer output.
+    Convert '**n' to unicode superscript or '^' and remove '*' for nicer output.
+    [IMPROVED VERSION]
     """
-    def replace(match):
+    # First, handle parenthesized exponents like **(n+1) -> ^(n+1)
+    expr = re.sub(r'\*\*\((.*?)\)', r'^(\1)', expr)
+
+    # Then, handle simple numeric exponents like **2 -> ² or **-1 -> ⁻¹
+    def numeric_power_to_unicode(match):
         power = match.group(1)
-        return ''.join(superscript_map.get(ch, ch) for ch in power)
-    expr = re.sub(r'\*\*([\-]?\d+)', lambda m: replace(m), expr)
+        # Only convert if it's a simple integer
+        if power.isdigit() or (power.startswith('-') and power[1:].isdigit()):
+            return ''.join(superscript_map.get(ch, ch) for ch in power)
+        # Otherwise, fall back to using a caret
+        return f"^{power}"
+
+    expr = re.sub(r'\*\*([a-zA-Z0-9\.\-]+)', numeric_power_to_unicode, expr)
     expr = expr.replace('*', '')  # Remove multiplication signs for display
     return expr
 
 def insert_implicit_multiplication_rules(expr_str):
     """
     Safer insertion of explicit multiplication for parse reliability.
-
-    - First: insert '*' between a digit and a known function name, e.g. '2sec(x)' -> '2*sec(x)'
-    - Protects known function names (when followed by '(') so they are not split.
-    - Inserts * between digit and letter or digit and '(' (e.g. 2x -> 2*x).
-    - Inserts * between ')' and digit/letter/'(' (e.g. )( -> )*(, )x -> )*x).
-    - Inserts * between letter/variable and '(' (e.g. x( -> x*().
-    - Does NOT insert * between adjacent letters (avoids splitting 'sin', 'exp', etc.).
+    [FINAL VERSION]
     """
-    # List of common function names to protect (only when used as functions with '(')
+    # FIX 1: Handle unary minus, e.g., -abs() -> -1*abs()
+    expr_str = re.sub(r'(?<=[=\s\(\+\-\*/])-\s*(abs|Abs)\(', r'-1*\1(', expr_str)
+    
+    # FIX 2: Handle coefficients, e.g., 2abs() -> 2*abs() or -2abs() -> -2*abs()
+    # This looks for a number followed by a function name and inserts a '*'
+    func_pattern = r'\b(sin|cos|tan|cot|sec|csc|asin|acos|atan|acot|asec|acsc|sinh|cosh|tanh|exp|log|sqrt|Abs|abs)\b'
+    expr_str = re.sub(rf'(\d+\.?\d*)\s*({func_pattern})', r'\1*\2', expr_str)
+
+    # --- Original rules for other cases ---
     func_names = [
-        'sin','cos','tan','cot','sec','csc',
-        'asin','acos','atan','acot','asec','acsc',
-        'arcsin', 'arccos', 'arctan', 'arccot', 'arcsec', 'arccsc',
-        'sinh','cosh','tanh',
+        'sin','cos','tan','cot','sec','csc','asin','acos','atan','acot','asec','acsc',
+        'arcsin', 'arccos', 'arctan', 'arccot', 'arcsec', 'arccsc','sinh','cosh','tanh',
         'exp','log','sqrt','Abs','erf','erfc'
     ]
-
-    # 1) Insert multiplication between a digit and a following function name:
-    #    e.g. "2sec(x)" -> "2*sec(x)"
-    funcs_pattern = r'|'.join(re.escape(fn) for fn in func_names)
-    # match a digit followed by optional spaces and one of the function names and a '('
-    expr_str = re.sub(rf'(\d)\s*({funcs_pattern})\s*\(',
-                      r'\1*\2(', expr_str)
-
-    # 2) Protect known function names by replacing "name(" -> "__FN{i}__(" to avoid splitting them
+    # Protect function names before applying general rules
     placeholder_map = {}
     for i, name in enumerate(func_names):
         token = f"__FN{i}__"
         placeholder_map[token] = name
-        # replace function name only when followed by '(' (allow optional whitespace)
         expr_str = re.sub(rf'\b{name}\s*\(', f'{token}(', expr_str)
 
-    # 3) Insert multiplication where it's safe:
-    #    - 2x -> 2*x ; 2(x) -> 2*(x)
+    # General implicit multiplication rules
     expr_str = re.sub(r'(\d)([a-zA-Z(])', r'\1*\2', expr_str)
-    #    - )(x or )2 -> )*x  )*2
     expr_str = re.sub(r'(\))([a-zA-Z0-9(])', r'\1*\2', expr_str)
-    #    - x( or 2( -> x*( or 2*(
     expr_str = re.sub(r'([a-zA-Z0-9])(\()', r'\1*\2', expr_str)
 
-    # 4) Restore function names (token -> original)
+    # Restore function names
     for token, name in placeholder_map.items():
         expr_str = expr_str.replace(token + '(', name + '(')
-
+        
     return expr_str
 
 
 def _parse_expression_string(expression_string):
     """
     Parses and normalizes a user-supplied expression string into a SymPy expression.
-    Returns (parsed_expr, error_message_or_None).
+    [FINAL, MORE ROBUST VERSION]
     """
     expr_str = expression_string.strip()
     if not expr_str:
         return None, "❌ Error: Expression cannot be empty."
 
-    # Convert unicode superscript and caret -> **
-    expr_str = unicode_to_normal_expr(expr_str)
-    expr_processed = expr_str.replace('^', '**')
+    expr_processed = unicode_to_normal_expr(expr_str)
+    expr_processed = expr_processed.replace('^', '**')
 
-    # Apply implicit multiplication heuristics (safer version)
+    # --- START: New, more robust pre-processing for 'abs' ---
+    # 1. Canonicalize 'abs' to 'Abs' to simplify the next steps.
+    expr_processed = expr_processed.replace('abs(', 'Abs(')
+    
+    # 2. Find any unary minus right before Abs() and make multiplication explicit.
+    #    This changes patterns like '(-Abs(' or '-Abs(' into '(-1*Abs(' or '-1*Abs('.
+    expr_processed = re.sub(r'(?<=[=\s\(\+\-\*/,])-\s*Abs\(', '-1*Abs(', expr_processed)
+    # --- END: New pre-processing ---
+
+    # The general implicit multiplication is still useful for other cases.
     expr_processed = insert_implicit_multiplication_rules(expr_processed)
 
-    # Whitelist of allowed functions/constants for parse_expr local namespace
     allowed_locals = {
-        # elementary trig
         'sin': sin, 'cos': cos, 'tan': tan, 'cot': cot, 'sec': sec, 'csc': csc,
-        # inverse trig
         'asin': asin, 'acos': acos, 'atan': atan, 'acot': acot, 'asec': asec, 'acsc': acsc,
         'arcsin': asin, 'arccos': acos, 'arctan': atan, 'arccot': acot, 'arcsec': asec, 'arccsc': acsc,
-        # hyperbolic
         'sinh': sinh, 'cosh': cosh, 'tanh': tanh,
-        # other math
-        'exp': exp, 'log': log, 'sqrt': sqrt, 'Abs': Abs,
-        # constants
-        'pi': pi, 'E': E
+        'exp': exp, 'log': log, 'sqrt': sqrt, 'Abs': Abs, 'abs': Abs,
+        'pi': pi, 'E': E, 'inf': S.Infinity, 'oo': S.Infinity
     }
 
     try:
@@ -251,7 +252,7 @@ def factor_expr(expression_string):
         return None, None, error
     try:
         # factor(..., trig=True) attempts trig-factorization as well
-        factored = factor(parsed_expr, trig=True)
+        factored = factor(parsed_expr)
         return _format_output(factored)
     except Exception as e:
         return None, None, f"❌ Error during factorization: {e}. Not all expressions can be factored."
@@ -260,10 +261,14 @@ def substitute_expr(full_input_string):
     parts = full_input_string.split(';', 1)
     expression_string = parts[0].strip()
     if not expression_string:
-        return None, None, "❌ Error: Expression part cannot be empty for substitution."
-    parsed_expr, error = _parse_expression_string(expression_string)
-    if error:
-        return None, None, error
+        return None, None, "❌ Error: Expression part cannot be empty."
+
+    # Use a clean sympify for the expression to avoid issues with complex parsers
+    try:
+        parsed_expr = sympify(expression_string, evaluate=False)
+    except Exception as e:
+        return None, None, f"❌ Error parsing expression: {e}"
+
     substitutions = {}
     if len(parts) > 1 and parts[1].strip():
         var_assignments_str = parts[1].strip()
@@ -275,41 +280,101 @@ def substitute_expr(full_input_string):
                     continue
                 var_val = assignment.split('=', 1)
                 if len(var_val) != 2:
-                    return None, None, f"❌ Error: Invalid variable assignment format: '{assignment}'. Expected 'var=value'."
+                    return None, None, f"❌ Error: Invalid format: '{assignment}'. Expected 'var=value'."
+                
                 var_name = var_val[0].strip()
                 val_str = var_val[1].strip()
-                if not var_name:
-                    return None, None, f"❌ Error: Variable name cannot be empty in '{assignment}'."
-                if not val_str:
-                    return None, None, f"❌ Error: Value cannot be empty for variable '{var_name}'."
-                try:
-                    val = sympify(val_str)
-                except Exception as e_val:
-                    return None, None, f"❌ Error: Could not parse value '{val_str}' for variable '{var_name}': {e_val}"
-                substitutions[symbols(var_name)] = val
+                
+                # Create symbol and value safely
+                var_symbol = symbols(var_name)
+                val_object = sympify(val_str)
+                substitutions[var_symbol] = val_object
+
         except Exception as e_parse_subs:
             return None, None, f"❌ Error parsing variable assignments: {e_parse_subs}"
     else:
-        if parsed_expr.free_symbols:
-            return None, None, "❌ Error: Expression has variables but no values provided for substitution. Format: expr; var1=val1, var2=val2"
+        return None, None, "❌ Error: No substitution values provided."
+
     try:
         substituted_expr = parsed_expr.subs(substitutions)
         
+        # If all variables are substituted, evaluate to a number
         if not substituted_expr.free_symbols:
             evaluated_result = substituted_expr.evalf()
-            display = str(evaluated_result)
-            latex = sympy_latex(evaluated_result)
-            return display, latex, None
+            return str(evaluated_result), sympy_latex(evaluated_result), None
         else:
             return _format_output(substituted_expr)
     except Exception as e:
-        return None, None, f"❌ Error during substitution/evaluation: {e}"
+        return None, None, f"❌ Error during substitution: {e}"
+
+def _general_chain_rule_diff(eq_lhs, eq_rhs, w_r_t_var):
+    """
+    Applies the differential operator d/dt to both sides of an equation, 
+    treating all other symbols as functions of t (Total Differentiation / Implicit w.r.t a third variable).
+    [IMPROVED VERSION]
+    """
+    t = w_r_t_var
+    
+    # 1. Collect all symbols
+    all_symbols = eq_lhs.free_symbols.union(eq_rhs.free_symbols)
+    known_constants = {pi, E, sympify('I')}
+    symbols_to_make_functions = all_symbols - {t} - known_constants
+    
+    # 2. Map every symbol to a function of 't'
+    func_map = {sym: Function(str(sym))(t) for sym in symbols_to_make_functions}
+        
+    # 3. Substitute and Differentiate both sides w.r.t. t
+    LHS_func = eq_lhs.subs(func_map)
+    RHS_func = eq_rhs.subs(func_map)
+    
+    LHS_diff = sympy_diff(LHS_func, t)
+    RHS_diff = sympy_diff(RHS_func, t)
+
+    # 4. Create a robust replacement map for formatting derivatives
+    # This is safer than using regex on the final LaTeX string.
+    # It replaces Derivative(x(t), t) with a symbol 'dx/dt' before rendering.
+    
+    # For display string (e.g., "dx/dt")
+    display_replace_map = {}
+    # For LaTeX string (e.g., "\frac{dx}{dt}")
+    latex_replace_map = {}
+
+    for sym in symbols_to_make_functions:
+        # The SymPy object for the derivative, e.g., Derivative(x(t), t)
+        derivative_obj = Derivative(func_map[sym], t)
+        sym_name = str(sym)
+        t_name = str(t)
+        
+        # Mapping for the simple string display
+        display_replace_map[derivative_obj] = Symbol(f"d{sym_name}/d{t_name}")
+        
+        # Mapping for the LaTeX display using SymPy's pretty printing
+        latex_derivative_symbol = symbols(f"\\frac{{d{sym_name}}}{{d{t_name}}}")
+        latex_replace_map[derivative_obj] = latex_derivative_symbol
+    
+    # 5. Apply the replacements to the differentiated expressions
+    LHS_display = LHS_diff.subs(display_replace_map).subs({v: k for k, v in func_map.items()})
+    RHS_display = RHS_diff.subs(display_replace_map).subs({v: k for k, v in func_map.items()})
+    
+    LHS_latex = LHS_diff.subs(latex_replace_map).subs({v: k for k, v in func_map.items()})
+    RHS_latex = RHS_diff.subs(latex_replace_map).subs({v: k for k, v in func_map.items()})
+
+    # 6. Generate final strings
+    final_display_str = f"{LHS_display} = {RHS_display}"
+    final_latex_str = f"{sympy_latex(LHS_latex)} = {sympy_latex(RHS_latex)}"
+    
+    # Use normal_to_unicode_expr for a nicer display string
+    final_display_str = normal_to_unicode_expr(final_display_str)
+    
+    return final_display_str, final_latex_str, None
+
 
 def differentiate_expr(full_input_string):
     """
-    Differentiates an expression (Explicit/Partial) or an equation (Implicit).
+    Differentiates an expression (Explicit/Partial) or an equation (Implicit/Total Derivative).
     Explicit Input: expr or expr; var, order (e.g., x^3; x, 2)
     Implicit Input: equation=expr; dependent_var, independent_var (e.g., x^2+y^2=1; y, x)
+    Total Derivative: equation=expr; diff_wrt_var (e.g., -1/x=m; y)
     """
     parts = full_input_string.split(';', 1)
     expr_or_equation_string = parts[0].strip()
@@ -317,12 +382,12 @@ def differentiate_expr(full_input_string):
     if not expr_or_equation_string:
         return None, None, "❌ Error: Expression or equation cannot be empty."
 
-    # --- Implicit Differentiation Check ---
+    # --- Implicit/Total Differentiation Check ---
     if '=' in expr_or_equation_string:
-        # Implicit Differentiation Case: F(x, y) = 0
+        # Separate LHS and RHS
         eq_parts = expr_or_equation_string.split('=', 1)
         
-        # Calculate F = LHS - RHS
+        # Parse LHS and RHS
         lhs_parsed, err_lhs = _parse_expression_string(eq_parts[0])
         if err_lhs: return None, None, f"❌ Error parsing LHS: {err_lhs}"
 
@@ -330,40 +395,56 @@ def differentiate_expr(full_input_string):
             rhs_parsed, err_rhs = _parse_expression_string(eq_parts[1])
             if err_rhs: return None, None, f"❌ Error parsing RHS: {err_rhs}"
         else:
-            # If RHS is empty (e.g., x^2+y^2=) treat as = 0
             rhs_parsed = sympify(0)
             
         F_expr = lhs_parsed - rhs_parsed
 
-        # Parse variables part: dependent_var, independent_var
-        dependent_var_name = 'y' # Default dependent var
-        independent_var_name = 'x' # Default independent var
-        
+        # Parse variables part
         if len(parts) > 1 and parts[1].strip():
             var_part = parts[1].strip()
-            # Split by comma to find dependent and independent variables
             var_parts_split = [p.strip() for p in var_part.split(',', 2)]
             
             if len(var_parts_split) == 1:
-                # If only one var is provided, assume it's the dependent variable and independent is 'x'
-                dependent_var_name = var_parts_split[0]
+                # --------------------------------------------------------
+                # Case 1: Total Differentiation (e.g., -1/x=m; y)
+                # --------------------------------------------------------
+                try:
+                    diff_wrt_var = Symbol(var_parts_split[0])
+                except Exception as e:
+                    return None, None, f"❌ Error: Invalid variable '{var_parts_split[0]}'"
+
+                return _general_chain_rule_diff(lhs_parsed, rhs_parsed, diff_wrt_var)
+                
             elif len(var_parts_split) >= 2:
-                # Both dependent and independent are provided (e.g., y, x)
+                # --------------------------------------------------------
+                # Case 2: Standard Implicit (e.g., x^2+y^2=1; y, x)
+                # --------------------------------------------------------
                 dependent_var_name = var_parts_split[0]
                 independent_var_name = var_parts_split[1]
-            
-        try:
-            dependent = Symbol(dependent_var_name)
-            independent = Symbol(independent_var_name)
-        except Exception as e:
-            return None, None, f"❌ Error: Invalid variable names: {e}"
+                
+                try:
+                    dependent = Symbol(dependent_var_name)
+                    independent = Symbol(independent_var_name)
+                except Exception as e:
+                    return None, None, f"❌ Error: Invalid variable names: {e}"
 
-        try:
-            # SymPy idiff signature: idiff(eq, dependent_var, independent_var)
-            differentiated = idiff(F_expr, dependent, independent)
-            return _format_output(differentiated)
-        except Exception as e:
-            return None, None, f"❌ Error during implicit differentiation: {e}"
+                # 1. Calculate Partial derivative w.r.t independent variable (Fx = dF/dx)
+                partial_independent = sympy_diff(F_expr, independent)
+                
+                # 2. Calculate Partial derivative w.r.t dependent variable (Fy = dF/dy)
+                partial_dependent = sympy_diff(F_expr, dependent)
+                
+                # 3. Check for singularities (division by zero)
+                if partial_dependent == 0:
+                     return None, None, "❌ Error: Cannot solve implicitly. Derivative w.r.t. the dependent variable is zero."
+
+                # 4. Apply the formula: dy/dx = - Fx / Fy
+                differentiated = - partial_independent / partial_dependent
+                
+                return _format_output(differentiated)
+
+        else:
+            return None, None, "❌ Error: For an equation, please specify at least the differentiation variable (e.g., Eq; t) or (Eq; dep, indep)."
 
     # --- Explicit/Partial Differentiation Case (Existing Logic) ---
     else:
@@ -377,7 +458,6 @@ def differentiate_expr(full_input_string):
 
         if len(parts) > 1 and parts[1].strip():
             var_part = parts[1].strip()
-            # Expecting: "x" (variable only) or "x, 2" (variable and order)
             var_parts_split = [p.strip() for p in var_part.split(',', 1)]
             
             var_name = var_parts_split[0]
@@ -397,43 +477,26 @@ def differentiate_expr(full_input_string):
         try:
             # SymPy diff signature: diff(expr, var, order)
             differentiated = sympy_diff(parsed_expr, var, order)
-            return _format_output(differentiated)
+            simplified_result = simplify(differentiated)
+            return _format_output(simplified_result)
         except Exception as e:
             return None, None, f"❌ Error during differentiation: {e}"
 
 # --- Helper for Transform Functions ---
 
-def _parse_transform_request(full_input_string, expected_vars=2):
+def _parse_transform_request(s):
     """
-    Parses Laplace/Fourier/Mellin Transform requests.
-    Input format: expr; input_var, transform_var
-    Returns: (parsed_expr, input_var, transform_var, error_or_None)
+    Helper to parse transform requests: "expr; t, k".
     """
-    parts = full_input_string.split(';', 1)
-    expr_part = parts[0].strip()
-    
-    if not expr_part:
-        return None, None, None, "❌ Error: Expression cannot be empty."
-
-    parsed_expr, err = _parse_expression_string(expr_part)
-    if err:
-        return None, None, None, err
-
+    parts = s.split(';', 1)
+    p, e = _parse_expression_string(parts[0].strip())
+    if e:
+        return None, None, None, e
     if len(parts) < 2 or not parts[1].strip():
-        return None, None, None, "❌ Error: Please specify input and transform variables. Format: expr; input_var, transform_var"
+        return None, None, None, "❌ Error: Specify input and output variables."
 
-    var_parts = [p.strip() for p in parts[1].split(',', expected_vars)]
-    
-    if len(var_parts) != expected_vars:
-        return None, None, None, f"❌ Error: Expected {expected_vars} variables (input, transform) but received {len(var_parts)}."
-    
-    try:
-        input_var = Symbol(var_parts[0])
-        transform_var = Symbol(var_parts[1])
-    except Exception as e:
-        return None, None, None, f"❌ Error: Invalid variable name: {e}"
-
-    return parsed_expr, input_var, transform_var, None
+    v_in, v_out = [symbols(v.strip()) for v in parts[1].split(',')]
+    return p, v_in, v_out, None
 
 # --- Integral Transform operations ---
 
@@ -450,31 +513,26 @@ def laplace_transform_expr(full_input_string):
     except Exception as e:
         return None, None, f"❌ Error during Laplace Transform: {e}"
 
-def fourier_transform_expr(full_input_string):
-    """Fourier Transform: F{f(x)}(k) = F(k). Input: expr; x, k"""
-    parsed_expr, var, transform_var, err = _parse_transform_request(full_input_string)
-    if err:
-        return None, None, err
-    try:
-        # fourier_transform returns (F(k), cond)
-        result_tuple = fourier_transform(parsed_expr, var, transform_var)
-        # _format_output handles the result tuple
-        return _format_output(result_tuple)
-    except Exception as e:
-        return None, None, f"❌ Error during Fourier Transform: {e}"
+def fourier_transform_expr(s):
+    """
+    Calculates the Fourier Transform of an expression.
+    """
+    p, t, k, e = _parse_transform_request(s)
+    if e:
+        return (None, None, e)
 
-def mellin_transform_expr(full_input_string):
-    """Mellin Transform: M{f(x)}(s) = F(s). Input: expr; x, s"""
-    parsed_expr, var, transform_var, err = _parse_transform_request(full_input_string)
-    if err:
-        return None, None, err
-    try:
-        # mellin_transform returns (F(s), (a, b), cond)
-        result_tuple = mellin_transform(parsed_expr, var, transform_var)
-        # _format_output handles the result tuple
-        return _format_output(result_tuple)
-    except Exception as e:
-        return None, None, f"❌ Error during Mellin Transform: {e}"
+    return _format_output(fourier_transform(p, t, k))
+
+def mellin_transform_expr(s):
+    """
+    Calculates the Mellin Transform of an expression.
+    """
+    p, t, k, e = _parse_transform_request(s)
+    if e:
+        return (None, None, e)
+
+    # noconds=True simplifies the output by hiding convergence conditions
+    return _format_output(mellin_transform(p, t, k, noconds=True))
 
 # --- Worker/timeout helper for heavy CAS operations ---
 def _worker_wrapper(fn, q, *args, **kwargs):
@@ -521,13 +579,12 @@ def _run_with_timeout(fn, args=(), kwargs=None, timeout=5):
 # --- Integration support ---
 def _parse_integration_request(full_input_string):
     """
-    Supported forms:
-    - "expr"                      => indefinite, variable autodetected (if single symbol)
-    - "expr ; x"                  => indefinite, variable x
-    - "expr ; x=a,b"              => definite integral from a to b
+    Parses integration requests: "expr", "expr ; x", or "expr ; x=a,b".
     """
+    parsed_expr, var, limits, err = None, None, None, None
     parts = full_input_string.split(';', 1)
     expr_part = parts[0].strip()
+
     if not expr_part:
         return None, None, None, "❌ Error: Expression cannot be empty."
 
@@ -535,43 +592,29 @@ def _parse_integration_request(full_input_string):
     if err:
         return None, None, None, err
 
-    var = None
-    limits = None
-
     if len(parts) > 1 and parts[1].strip():
         varpart = parts[1].strip()
-        # expect either "x" or "x=a,b"
         if '=' in varpart:
             try:
                 varname, bounds = varpart.split('=', 1)
                 varname = varname.strip()
-                bounds = bounds.strip()
-                if ',' in bounds:
-                    a_str, b_str = bounds.split(',', 1)
-                elif '..' in bounds:
-                    a_str, b_str = bounds.split('..', 1)
-                else:
-                    return None, None, None, "❌ Error: Definite integral bounds must be 'a,b' or 'a..b'."
-                a = sympify(a_str.strip())
-                b = sympify(b_str.strip())
-                var = Symbol(varname)
-                limits = (var, a, b) 
+                a_str, b_str = bounds.split(',', 1)
+                # Define locals to correctly parse 'inf' and 'oo'
+                inf_locals = {'inf': S.Infinity, 'oo': S.Infinity}
+                a = sympify(a_str.strip(), locals=inf_locals)
+                b = sympify(b_str.strip(), locals=inf_locals)
+                var = symbols(varname)
+                limits = (var, a, b)
             except Exception as e:
-                return None, None, None, f"❌ Error parsing variable/limits: {e}"
+                return None, None, None, f"❌ Error parsing limits: {e}"
         else:
-            varname = varpart.strip()
-            try:
-                var = Symbol(varname)
-            except Exception as e:
-                return None, None, None, f"❌ Error: Invalid variable name '{varname}': {e}"
+            var = symbols(varpart.strip())
     else:
         syms = list(parsed_expr.free_symbols)
         if len(syms) == 1:
             var = syms[0]
-        elif len(syms) == 0:
-            var = Symbol('x')  # default
         else:
-            return None, None, None, "❌ Error: Multiple variables detected. Please specify the integration variable. Example: x+a; x"
+            return None, None, None, "❌ Error: Please specify integration variable."
 
     return parsed_expr, var, limits, None
 
