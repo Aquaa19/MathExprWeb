@@ -32,3 +32,5 @@ run_and_summarize.py
 run_tests.py
 test_cases_set_2.py
 test_cases.py
+test_cases_set_3.py
+run_all_tests.py

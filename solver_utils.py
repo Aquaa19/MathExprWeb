@@ -487,6 +487,7 @@ def differentiate_expr(full_input_string):
 def _parse_transform_request(s):
     """
     Helper to parse transform requests: "expr; t, k".
+    [IMPROVED VERSION]
     """
     parts = s.split(';', 1)
     p, e = _parse_expression_string(parts[0].strip())
@@ -495,7 +496,17 @@ def _parse_transform_request(s):
     if len(parts) < 2 or not parts[1].strip():
         return None, None, None, "❌ Error: Specify input and output variables."
 
-    v_in, v_out = [symbols(v.strip()) for v in parts[1].split(',')]
+    # Split the variables part by comma
+    var_parts = [v.strip() for v in parts[1].split(',')]
+
+    # FIX: Check if we have exactly two variables before unpacking
+    if len(var_parts) != 2:
+        return None, None, None, f"❌ Error: Expected 2 variables (e.g., 'x, s') but found {len(var_parts)}."
+    
+    # Unpack safely now that we've checked
+    v_in_str, v_out_str = var_parts
+    v_in, v_out = symbols(v_in_str), symbols(v_out_str)
+    
     return p, v_in, v_out, None
 
 # --- Integral Transform operations ---
